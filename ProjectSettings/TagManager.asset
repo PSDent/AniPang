@@ -3,7 +3,14 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Monkey
+  - Pig
+  - Panda
+  - Penguin
+  - Rabbit
+  - Snake
+  - Giraffe
   layers:
   - Default
   - TransparentFX
