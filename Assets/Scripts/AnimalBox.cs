@@ -12,7 +12,7 @@ public class AnimalBox : MonoBehaviour {
     BoxCollider2D boxColl;
     Vector3 originPos;
 
-    int dir = 0;
+    int dirV  = 0, dirH= 0;
     int row, column;
     bool bClicked = false;
     bool fix = false;
@@ -26,6 +26,30 @@ public class AnimalBox : MonoBehaviour {
         gameMgr = GameObject.Find("GameManager").GetComponent<GameManager>();
     }
 
+    void Switching()
+    {
+        GameObject ChangeTile = gameMgr.GetAnimalTile()[row + dirV, column + dirH];
+
+        // 넘어간 타일과 위치를 교환한다.
+        transform.position = ChangeTile.GetComponent<AnimalBox>().GetOriginPos();
+        ChangeTile.transform.position = originPos;
+
+        // 각 동물 타일의 originPos 값을 초기화한다.
+        originPos = transform.position;
+        ChangeTile.GetComponent<AnimalBox>().SetOriginPos(ChangeTile.transform.position);
+
+        // 이부분이 참 이상한 것 같습니다 
+        // board 배열의 위치를 바꾼다.
+        GameObject tempObj = gameMgr.GetAnimalTile()[row, column];
+        gameMgr.GetAnimalTile()[row, column] = ChangeTile;
+        gameMgr.GetAnimalTile()[row + dirV, column + dirH] = tempObj;
+        Debug.Log("Before Row : " + row + " Column : " + column);
+
+        gameMgr.GetAnimalTile()[row, column].GetComponent<AnimalBox>().SetArrNumber(row, column);
+        gameMgr.GetAnimalTile()[row + dirV, column + dirH].GetComponent<AnimalBox>().SetArrNumber(row + dirV, column + dirH);
+        Debug.Log("After Row : " + row + " Column : " + column);
+    }
+
     // 타일 이동시 짝이 3 이상이라면 그 때 움직이도록 수정할 것.
     // 이 부분이 제일 맛갔음 고치셈.
     private void OnMouseUp()
@@ -37,36 +61,20 @@ public class AnimalBox : MonoBehaviour {
             // 동물 타일이 절반 이상 넘어간 후 마우스를 놨다면
             if (originPos.y + DRAG_RANGE / DRAG_RANGE_DIV < transform.position.y || originPos.y - DRAG_RANGE / DRAG_RANGE_DIV > transform.position.y)
             {
-                GameObject ChangeTile = gameMgr.GetAnimalTile()[row + dir, column];
+                GameObject ChangeTile = gameMgr.GetAnimalTile()[row + dirV, column];
 
-                bOne = gameMgr.CheckAnimal(row, column, transform.tag);
-                bTwo = gameMgr.CheckAnimal(row + dir, column, ChangeTile.tag);
-                Debug.Log("dir : " + dir);
+                bOne = gameMgr.CheckAnimal(row + dirV, column, dirV, dirH, transform.tag);
+                bTwo = gameMgr.CheckAnimal(row, column, 0, 0, ChangeTile.tag);
+                Debug.Log("bOne : " + bOne + " bTwo : " + bTwo);
 
-                if (bOne || bTwo == false)
+                if ( (bOne || bTwo) == false)
                 {
                     transform.position = originPos;
                     fix = false;
                     return;
                 }
 
-                // 넘어간 타일과 위치를 교환한다.
-                transform.position = ChangeTile.GetComponent<AnimalBox>().GetOriginPos();
-                ChangeTile.transform.position = originPos;
-                
-                // 각 동물 타일의 originPos 값을 초기화한다.
-                originPos = transform.position;
-                ChangeTile.GetComponent<AnimalBox>().SetOriginPos(ChangeTile.transform.position);
-
-                // 이부분이 참 이상한 것 같습니다 
-                // board 배열의 위치를 바꾼다.
-                GameObject tempObj = gameMgr.GetAnimalTile()[row, column];
-                gameMgr.GetAnimalTile()[row, column] = ChangeTile;
-                gameMgr.GetAnimalTile()[row + dir, column] = tempObj;
-
-                gameMgr.GetAnimalTile()[row, column].GetComponent<AnimalBox>().SetArrNumber(row, column);
-                gameMgr.GetAnimalTile()[row + dir, column].GetComponent<AnimalBox>().SetArrNumber(row + dir, column);
-
+                Switching();
             }
             // 절반을 넘지 못했다면 다시 원위치 시킨다. 
             else
@@ -82,34 +90,19 @@ public class AnimalBox : MonoBehaviour {
             if (originPos.x + DRAG_RANGE / DRAG_RANGE_DIV < transform.position.x || originPos.x - DRAG_RANGE / DRAG_RANGE_DIV > transform.position.x)
             {
                 // 넘어간 타일 위치
-                GameObject ChangeTile = gameMgr.GetAnimalTile()[row, column + dir];
+                GameObject ChangeTile = gameMgr.GetAnimalTile()[row, column + dirH];
 
-                bOne = gameMgr.CheckAnimal(row, column, transform.tag);
-                bTwo = gameMgr.CheckAnimal(row, column + dir, ChangeTile.tag);
+                bTwo = gameMgr.CheckAnimal(row, column + dirH, dirV, dirH, transform.tag);
+                bOne = gameMgr.CheckAnimal(row, column, 0, 0, ChangeTile.tag);
+                Debug.Log("bOne : " + bOne + " bTwo : " + bTwo);
 
-                if (bOne || bTwo == false)
+                if ( (bOne || bTwo) == false)
                 {
                     transform.position = originPos;
                     fix = false;
                     return;
                 }
-
-                // 넘어간 타일과 위치를 교환한다.
-                transform.position = ChangeTile.GetComponent<AnimalBox>().GetOriginPos();
-                ChangeTile.transform.position = originPos;
-
-                // 각 동물 타일의 originPos 값을 초기화한다.
-                originPos = transform.position;
-                ChangeTile.GetComponent<AnimalBox>().SetOriginPos(ChangeTile.transform.position);
-
-                // 이부분이 참 이상한 것 같습니다. 수정 바람 
-                // board 배열의 위치를 바꾼다.
-                GameObject tempObj = gameMgr.GetAnimalTile()[row, column];
-                gameMgr.GetAnimalTile()[row, column] = ChangeTile;
-                gameMgr.GetAnimalTile()[row, column + dir] = tempObj;
-
-                gameMgr.GetAnimalTile()[row, column].GetComponent<AnimalBox>().SetArrNumber(row, column);
-                gameMgr.GetAnimalTile()[row, column + dir].GetComponent<AnimalBox>().SetArrNumber(row, column + dir);
+                Switching();
             }
             // 절반을 넘지 못했다면 다시 원위치 시킨다.
             else
@@ -135,7 +128,6 @@ public class AnimalBox : MonoBehaviour {
 
         // 상, 하
         // fix 변수는 수직 혹은 수평으로만 움직일 수 있도록 방향을 고정해주는 flag 변수
-        Debug.Log("Direction : " + dir);
         if (Mathf.Abs(mouseVertical) > Mathf.Abs(mouseHorizon) && !fix)
         {
             vertical = DRAG_SPEED;
@@ -169,16 +161,18 @@ public class AnimalBox : MonoBehaviour {
         if(vertical > 0)
         {
             if (mouseV > 0)
-                dir = 1;
+                dirV = 1;
             else if (mouseV < 0)
-                dir = -1;
+                dirV = -1;
+            dirH = 0;
         }
         else
         {
             if (mouseH > 0)
-                dir = 1;
+                dirH = 1;
             else if (mouseH < 0)
-                dir = -1;
+                dirH = -1;
+            dirV = 0;
         }
     }
 
@@ -204,4 +198,8 @@ public class AnimalBox : MonoBehaviour {
         column = this.column;
     }
 
+    //IEnumerator Drop()
+    //{
+
+    //}
 }

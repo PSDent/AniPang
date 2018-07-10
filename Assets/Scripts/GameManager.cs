@@ -151,15 +151,16 @@ public class GameManager : MonoBehaviour
     }
 
     // 동물타일을 이동시킬 때마다 3개 이상의 짝이 존재하는지 검사한다.
-    public bool CheckAnimal(int row, int column, string type)
+    public bool CheckAnimal(int row, int column, int dirV, int dirH, string type)
     {
         Queue<GameObject> queueW = new Queue<GameObject>();
         Queue<GameObject> queueH = new Queue<GameObject>();
         bool L, R, U, D, result1, result2;
         result1 = result2 = L = R = U = D = false;
 
-        queueW.Enqueue(board[row, column]);
-        
+        queueW.Enqueue(board[row - dirV, column - dirH]);
+        queueH.Enqueue(board[row - dirV, column - dirH]);
+
         // 맞는 짝을 상,하 탐색한다
         for (int i = 1; i < 7; ++i)
         {
@@ -180,19 +181,27 @@ public class GameManager : MonoBehaviour
             else
                 D = true;
         }
-        Debug.Log("CA");
+
+        Debug.Log("cnt1 : " + queueW.Count);
+        Debug.Log("cnt2 : " + queueH.Count);
 
         if (queueW.Count >= 3)
         {
             while(queueW.Count > 0)
-                Destroy(queueW.Dequeue());
+            {
+                queueW.Dequeue().GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            }
+            //    Destroy(queueW.Dequeue());
             result1 = true;
         }
 
         if (queueH.Count >= 3)
         {
+            queueH.Dequeue();
             while (queueH.Count > 0)
-                Destroy(queueH.Dequeue());
+            {
+                queueH.Dequeue().GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            }
             result2 = true;
         }
         return result1 || result2;
