@@ -50,7 +50,7 @@ public class GameManager : MonoBehaviour
 
                 // 페이드 효과를 위해 알파값을 0으로 초기화 한다.
                 Color color = board[i, j].GetComponent<SpriteRenderer>().color;
-
+            
                 board[i, j].GetComponent<SpriteRenderer>().color = new Vector4(color.r, color.g, color.b, 0.0f);
             }
         }
@@ -97,7 +97,7 @@ public class GameManager : MonoBehaviour
                 if (bOverlap)
                 {
                     // 해당 타일을 제거 후
-                    int val = CheckTagWithEnum(board[i, j].tag);
+                    int val = CheckTagWithEnum(board[i, j].tag, j, i);
                     DestroyObject(board[i, j]);
 
                     // 중복되지 않는 새로운 동물 타일로 교체한다. 
@@ -115,15 +115,31 @@ public class GameManager : MonoBehaviour
     }
 
     // 중복되는 타일의 태그를 Enum 을 이용하여 정수로 변환한다.
-    int CheckTagWithEnum(string str)
+    int CheckTagWithEnum(string str, int x, int y)
     {
+        int[] cntAnimal = new int[7];
         AnimalType animalType = (AnimalType)System.Enum.Parse(typeof(AnimalType), str);
         int randAnimal;
+
+        for (int i = -1; i < 2; ++i)
+        {
+            for (int j = -1; j < 2; ++j)
+            {
+                int tx = x + j, ty = y + i;
+
+                if (tx < 7 && tx >= 0 && ty < 7 && ty >= 0)
+                {
+                    int index = (int)System.Enum.Parse(typeof(AnimalType), board[ty, tx].tag);
+                    ++cntAnimal[index];
+                }
+            }
+        
+        }
 
         do
         {
             randAnimal = Random.Range(0, 7);
-        } while ((int)animalType == randAnimal);
+        } while (cntAnimal[randAnimal] > 0);
         Debug.Log("AnimalType : " + animalType);
 
         return randAnimal;
@@ -150,6 +166,18 @@ public class GameManager : MonoBehaviour
         return board;
     }
 
+    public void DropAnimals()
+    {
+        for (int i = 0; i < HEIGHT; ++i)
+        {
+            for (int j = 0; j < WIDTH; ++j)
+            {
+                if(board[i,j])
+                    board[i, j].GetComponent<AnimalBox>().StartCoroutine("Drop");
+            }
+        }
+    }
+
     // 동물타일을 이동시킬 때마다 3개 이상의 짝이 존재하는지 검사한다.
     public bool CheckAnimal(int row, int column, int dirV, int dirH, string type)
     {
@@ -158,10 +186,13 @@ public class GameManager : MonoBehaviour
         bool L, R, U, D, result1, result2;
         result1 = result2 = L = R = U = D = false;
 
-        queueW.Enqueue(board[row - dirV, column - dirH]);
+        Debug.Log("Row : " + (row - dirV) + " Column : " + (column - dirH));
+        Debug.Log("-dirY : " + -dirV + " -dirH : " + -dirH);
+        queueW.Enqueue(board[row - dirV, column - dirH]);     
         queueH.Enqueue(board[row - dirV, column - dirH]);
 
         // 맞는 짝을 상,하 탐색한다
+        // 야이 개새캬 일 똑바로 안해? 
         for (int i = 1; i < 7; ++i)
         {
             if (!R && column + i < 7 && board[row, column + i].tag == type)
@@ -180,10 +211,11 @@ public class GameManager : MonoBehaviour
                 queueH.Enqueue(board[row - i, column]);
             else
                 D = true;
+            Debug.Log("asd : " + (row + i));
         }
-
-        Debug.Log("cnt1 : " + queueW.Count);
-        Debug.Log("cnt2 : " + queueH.Count);
+        
+        //Debug.Log("cnt1 : " + queueW.Count);
+       // Debug.Log("cnt2 : " + queueH.Count);
 
         if (queueW.Count >= 3)
         {
@@ -197,7 +229,10 @@ public class GameManager : MonoBehaviour
 
         if (queueH.Count >= 3)
         {
-            queueH.Dequeue();
+            // 만약 이미 앞에서 기준이 되는 동물이 없어졌다면 팝.
+            if(result1)
+                queueH.Dequeue();
+
             while (queueH.Count > 0)
             {
                 queueH.Dequeue().GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
