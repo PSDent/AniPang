@@ -1,31 +1,36 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 using UnityEngine;
 
 public class User : MonoBehaviour {
+    const int INCREASE_SCORE = 25;
 
-    bool bClicked = false;
+    GameManager gameMgr;
+    Text scoreText;
+    int score = 0;
+    int targetScore = 0;
 
-    void CheckClick()
+    private void Awake()
     {
-        if(Input.GetMouseButtonDown(0))
-        {
-            bClicked = true;
-        }
-        else if(Input.GetMouseButtonUp(0))
-        {
-            bClicked = false;
-        }
+        scoreText = GameObject.Find("Canvas").transform.Find("ScoreBar")
+    .Find("ScoreNum").GetComponent<Text>();
+        gameMgr = GetComponent<GameManager>();
     }
 
-    //// Use this for initialization
-    //void Start () {
-
-    //}
-
-    // Update is called once per frame
-    void Update()
+    private void FixedUpdate()
     {
-        CheckClick();
+        if (score < targetScore)
+            score += INCREASE_SCORE;
+        else
+            score = targetScore;
+
+        scoreText.text = score.ToString();
+    }
+
+    public void AddTargetScore(int val)
+    {
+        Debug.Log("Target Value : " + val);
+        targetScore += val;
     }
 }

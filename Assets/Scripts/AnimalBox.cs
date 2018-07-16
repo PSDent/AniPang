@@ -1,30 +1,42 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class AnimalBox : MonoBehaviour {
+public class AnimalBox : MonoBehaviour
+{
 
     const float DRAG_SPEED = 0.2f;
     const float DRAG_RANGE = 0.8f;
     const float DRAG_RANGE_DIV = 1.6f;
-    const float DROP_SPEED = 0.01f;
+    const float DROP_SPEED = 0.08f;
     const float DROP_TIME = 0.01f;
 
     GameManager gameMgr;
     BoxCollider2D boxColl;
     Vector3 originPos;
 
-    int dirV  = 0, dirH= 0;
+    int dirV = 0, dirH = 0;
     int row, column;
-    bool bClicked = false;
     bool fix = false;
     float vertical = 0, horizontal = 0;
 
-	// Use this for initialization
-	void Start () {
+    // 플래그 
+    bool bStart = false;
+    bool bDropping = false;
+
+    // Use this for initialization
+    void Start()
+    {
         originPos = transform.position;
         boxColl = GetComponent<BoxCollider2D>();
         gameMgr = GameObject.Find("GameManager").GetComponent<GameManager>();
+    }
+
+    private void FixedUpdate()
+    {
+        if (!bDropping && row > 0 && gameMgr.GetAnimalTile()[row - 1, column] == null)
+        {
+            StartCoroutine("Drop");
+        }
     }
 
     void Switching()
@@ -44,16 +56,15 @@ public class AnimalBox : MonoBehaviour {
         GameObject tempObj = gameMgr.GetAnimalTile()[row, column];
         gameMgr.GetAnimalTile()[row, column] = ChangeTile;
         gameMgr.GetAnimalTile()[row + dirV, column + dirH] = tempObj;
-        Debug.Log("Before Row : " + row + " Column : " + column);
+        //Debug.Log("Before Row : " + row + " Column : " + column);
 
         gameMgr.GetAnimalTile()[row, column].GetComponent<AnimalBox>().SetArrNumber(row, column);
         gameMgr.GetAnimalTile()[row + dirV, column + dirH].GetComponent<AnimalBox>().SetArrNumber(row + dirV, column + dirH);
-        Debug.Log("After Row : " + row + " Column : " + column);
+        //Debug.Log("After Row : " + row + " Column : " + column);
     }
 
     // 타일 이동시 짝이 3 이상이라면 그 때 움직이도록 수정할 것.
     // 이 부분이 제일 맛갔음 고치셈.
-    // 야이 개새캬 일 똑바로 안해?
     private void OnMouseUp()
     {
         bool bOne = false, bTwo = false;
@@ -65,22 +76,20 @@ public class AnimalBox : MonoBehaviour {
             {
                 if (row + dirV < 0 || row + dirV > 6)
                     return;
-                GameObject ChangeTile = gameMgr.GetAnimalTile()[row + dirV, column];
-                Debug.Log("OnMouseUp, Row : " + (row + dirV) + " Column : " + (column + dirH));
-                bOne = gameMgr.CheckAnimal(row + dirV, column, dirV, dirH, transform.tag);
-                bTwo = gameMgr.CheckAnimal(row, column, dirV, dirH, ChangeTile.tag);
-                //Debug.Log("bOne : " + bOne + " bTwo : " + bTwo);
 
-                if ( (bOne || bTwo) == false)
+                GameObject ChangeTile = gameMgr.GetAnimalTile()[row + dirV, column];
+                bOne = gameMgr.CheckAnimal(row + dirV, column, dirV, dirH, transform.tag);
+                // 아래의 구문에서 심각한 인덱스 문제가 발생함. 고치기 바람. 
+                bTwo = gameMgr.CheckAnimal(row, column, -dirV, dirH, ChangeTile.tag);
+
+                if ((bOne || bTwo) == false)
                 {
                     transform.position = originPos;
                     fix = false;
                     return;
                 }
 
-                //Debug.Log("asd " + gameMgr.GetAnimalTile()[row, column]);
                 Switching();
-                gameMgr.DropAnimals();
             }
             // 절반을 넘지 못했다면 다시 원위치 시킨다. 
             else
@@ -90,29 +99,29 @@ public class AnimalBox : MonoBehaviour {
             }
         }
         // 좌우 이동 중
-        else if(horizontal != 0)
+        else if (horizontal != 0)
         {
             // 동물 타일이 절반 이상 넘어간 후 마우스를 놨다면
             if (originPos.x + DRAG_RANGE / DRAG_RANGE_DIV < transform.position.x || originPos.x - DRAG_RANGE / DRAG_RANGE_DIV > transform.position.x)
             {
-                if (column + dirH < 7 || column + dirH >= 0)
+                if (column + dirH < 0 || column + dirH > 6)
+                    return;
+
+                // 넘어간 타일 위치
+                GameObject ChangeTile = gameMgr.GetAnimalTile()[row, column + dirH];
+                bTwo = gameMgr.CheckAnimal(row, column + dirH, dirV, dirH, transform.tag);
+                bOne = gameMgr.CheckAnimal(row, column, dirV, -dirH, ChangeTile.tag);
+
+                if ((bOne || bTwo) == false)
                 {
-                    // 넘어간 타일 위치
-                    GameObject ChangeTile = gameMgr.GetAnimalTile()[row, column + dirH];
-
-                    bTwo = gameMgr.CheckAnimal(row, column + dirH, dirV, dirH, transform.tag);
-                    bOne = gameMgr.CheckAnimal(row, column, dirV, dirH, ChangeTile.tag);
-                    
-
-                    if ((bOne || bTwo) == false)
-                    {
-                        transform.position = originPos;
-                        fix = false;
-                        return;
-                    }
-                    Switching();
+                    transform.position = originPos;
+                    fix = false;
+                    return;
                 }
+
+                Switching();
             }
+
             // 절반을 넘지 못했다면 다시 원위치 시킨다.
             else
             {
@@ -120,8 +129,6 @@ public class AnimalBox : MonoBehaviour {
                 fix = false;
             }
         }
-
-        bClicked = false;
     }
 
     // 마우스가 드래그 된 방향에 따라 동물 타일을 교환시킨다.
@@ -154,19 +161,15 @@ public class AnimalBox : MonoBehaviour {
 
         // 드래그한 만큼 타일을 이동시킨다. 
         Vector3 nowPos = transform.position;
-        if(originPos.x + DRAG_RANGE > nowPos.x + mouseHorizon * horizontal && originPos.x - DRAG_RANGE < nowPos.x + mouseHorizon * horizontal &&
+        if (originPos.x + DRAG_RANGE > nowPos.x + mouseHorizon * horizontal && originPos.x - DRAG_RANGE < nowPos.x + mouseHorizon * horizontal &&
             originPos.y + DRAG_RANGE > nowPos.y + mouseVertical * vertical && originPos.y - DRAG_RANGE < nowPos.y + mouseVertical * vertical)
             transform.position += new Vector3(mouseHorizon * horizontal, mouseVertical * vertical, 0);
     }
 
-    private void OnMouseDown()
-    {
-        Debug.Log("Row : " + row + ' ' + "Column : " + column + ' ' + "Tag : " + transform.tag);
-    }
-
+    // 마우스 드래그 방향에 따라 동물 타일의 방향을 결정함.
     void DecideDirection(float mouseV, float mouseH)
     {
-        if(vertical > 0)
+        if (vertical > 0)
         {
             if (mouseV > 0)
                 dirV = 1;
@@ -206,25 +209,24 @@ public class AnimalBox : MonoBehaviour {
         column = this.column;
     }
 
-    // 여기도 이상하다 
-    // 안 움직인다.
-    // == > 동물 타일이 다 사라지기 까지 기다려야 함. 그 타이밍을 맞출 것!
     IEnumerator Drop()
     {
-        // 여기서 타이밍을 맞추셈
-        yield return new WaitForSeconds(2.0f);
+        bDropping = true;
 
-        Debug.Log("Row : " + row);
-        Debug.Log("gobj : " + gameMgr.GetAnimalTile()[row - 1, column]);
-        if (row > 0 && gameMgr.GetAnimalTile()[row - 1, column] == null)
+        // 맨 처음의 경우 사라지는 동물과 타이밍을 맞추기 위해 조금 지연시킨다. 
+        if (!bStart)
         {
-            //yield return null;
+            yield return new WaitForSeconds(GameManager.TIMING-0.2f);
+            bStart = true;
+        }
 
+        // 이후 아래가 비었는지 계속 확인하며 떨어진다.
+        while (row > 0 && gameMgr.GetAnimalTile()[row - 1, column] == null)
+        {
             gameMgr.GetAnimalTile()[row - 1, column] = gameMgr.GetAnimalTile()[row, column];
             gameMgr.GetAnimalTile()[row, column] = null;
-            Debug.Log("Delete : " + gameMgr.GetAnimalTile()[row, column]);
+            --row;
 
-            Debug.Log("Droping");
             while (originPos.y - transform.position.y < 0.8f)
             {
                 Vector3 movement = new Vector3(0, DROP_SPEED, 0);
@@ -232,11 +234,15 @@ public class AnimalBox : MonoBehaviour {
 
                 yield return new WaitForSeconds(DROP_TIME);
             }
-            originPos = transform.position;
+
+            Vector3 tempVector = new Vector3(originPos.x, originPos.y - 0.8f, originPos.z);
+            originPos = tempVector;
         }
-        // 배열상의 오브젝트도 밑으로 내릴 것 
-        // 오브젝트 내부의 row 값도 내릴 것
-        
-        //StartCoroutine("Drop");
+
+        transform.position = originPos;
+        bStart = false;
+
+        gameMgr.CheckAnimal(row, column, 0, 0, transform.tag);
+        bDropping = false;
     }
 }

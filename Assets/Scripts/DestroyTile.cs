@@ -5,7 +5,7 @@ using UnityEngine;
 public class DestroyTile : MonoBehaviour {
 
     const float ALPHA_DECRESE = 0.15f;
-    const float TIME = 0.1f;
+    const float TIME = 0.03f; // RefillTiming > TIMING > 7 * TIME
 
     SpriteRenderer spriteRenderer;
 

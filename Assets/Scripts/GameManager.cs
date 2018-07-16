@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-
     // 상수
     const int WIDTH = 7;
     const int HEIGHT = 7;
@@ -16,23 +15,34 @@ public class GameManager : MonoBehaviour
     const float CREATE_DELAY = 0.3f;
     const float FADE_IN_DELAY = 0.001f;
     const float FADE_VALUE = 0.035f;
+    public const float TIMING = 0.2f;
+    const int SCORE_INCREASE = 300;
 
     // 0-Monkey, 1-Gigaffe, 2-Panda, 3-Penguin, 4-Rabbit, 5-Snake, 6-Pig
     enum AnimalType { Monkey, Giraffe, Panda, Penguin, Rabbit, Snake, Pig };
 
     public GameObject[] animal;
     GameObject[,] board;
+    User user;
 
+    bool bReFilling = false;
+    bool bDropping = false;
     bool bStart = true;
 
     // Use this for initialization
     void Start()
     {
+        user = GetComponent<User>();
         // 동물 타일을 담을 2차원 배열을 할당
         board = new GameObject[HEIGHT, WIDTH];
 
         if (bStart)
             Create();
+    }
+
+    public bool IsDropping()
+    {
+        return bDropping;
     }
 
     // 동물 타일을 게임 시작 전 생성한다. 
@@ -42,23 +52,29 @@ public class GameManager : MonoBehaviour
         {
             for (int j = 0; j < WIDTH; ++j)
             {
-                int val = Random.Range(0, 7);
-                Vector3 pos = new Vector3(j * SPACE - START_X_POS, CREATE_Y_POS * i + START_Y_POS, 0.0f);
-
-                board[i, j] = Instantiate(animal[val], pos, Quaternion.identity);
-                board[i, j].GetComponent<AnimalBox>().SetArrNumber(i, j);
-
-                // 페이드 효과를 위해 알파값을 0으로 초기화 한다.
-                Color color = board[i, j].GetComponent<SpriteRenderer>().color;
-            
-                board[i, j].GetComponent<SpriteRenderer>().color = new Vector4(color.r, color.g, color.b, 0.0f);
+                CreateAnimalTile(j, i, true);
             }
         }
         bStart = false;
 
         CheckOverlap();
-
         StartCoroutine("FadeIn");
+    }
+
+    void CreateAnimalTile(int x, int y, bool alphaOn)
+    {
+        int val = Random.Range(0, 7);
+        Vector3 pos = new Vector3(x * SPACE - START_X_POS, CREATE_Y_POS * y + START_Y_POS, 0.0f);
+
+        board[y, x] = Instantiate(animal[val], pos, Quaternion.identity);
+        board[y, x].GetComponent<AnimalBox>().SetArrNumber(y, x);
+
+        // 페이드 효과를 위해 알파값을 0으로 초기화 한다.
+        if (alphaOn)
+        {
+            Color color = board[y, x].GetComponent<SpriteRenderer>().color;
+            board[y, x].GetComponent<SpriteRenderer>().color = new Vector4(color.r, color.g, color.b, 0.0f);
+        }
     }
 
     // 중복된 동물타일을 없앤다.
@@ -78,7 +94,7 @@ public class GameManager : MonoBehaviour
                         bOverlap = true;
                     }
                 }
-                else if ((i == 0 || i == HEIGHT - 1) && j > 0 && j > WIDTH - 1)
+                else if ((i == 0 || i == HEIGHT - 1) && j > 0 && j < WIDTH - 1)
                 {
                     if (board[i, j - 1].tag == board[i, j].tag && board[i, j + 1].tag == board[i, j].tag)
                     {
@@ -140,8 +156,6 @@ public class GameManager : MonoBehaviour
         {
             randAnimal = Random.Range(0, 7);
         } while (cntAnimal[randAnimal] > 0);
-        Debug.Log("AnimalType : " + animalType);
-
         return randAnimal;
     }
 
@@ -161,13 +175,21 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void FixedUpdate()
+    {
+        if(!bReFilling)
+            StartCoroutine("Refill");
+    }
+
     public GameObject[,] GetAnimalTile()
     {
         return board;
     }
 
+    // 동물타일을 떨어뜨린다
     public void DropAnimals()
     {
+        bDropping = true;
         for (int i = 0; i < HEIGHT; ++i)
         {
             for (int j = 0; j < WIDTH; ++j)
@@ -176,6 +198,7 @@ public class GameManager : MonoBehaviour
                     board[i, j].GetComponent<AnimalBox>().StartCoroutine("Drop");
             }
         }
+        StartCoroutine("Refill");
     }
 
     // 동물타일을 이동시킬 때마다 3개 이상의 짝이 존재하는지 검사한다.
@@ -186,53 +209,70 @@ public class GameManager : MonoBehaviour
         bool L, R, U, D, result1, result2;
         result1 = result2 = L = R = U = D = false;
 
-        Debug.Log("Row : " + (row - dirV) + " Column : " + (column - dirH));
-        Debug.Log("-dirY : " + -dirV + " -dirH : " + -dirH);
-        queueW.Enqueue(board[row - dirV, column - dirH]);     
-        queueH.Enqueue(board[row - dirV, column - dirH]);
+        if (row + (dirV * -1) >= 0 && row + (dirV * -1) < HEIGHT &&
+            column + (dirH * -1) >= 0 && column + (dirH * -1) < WIDTH)
+            if (board[row + (dirV * -1), column + (dirH * -1)] == null)
+                return false;
+
+        queueW.Enqueue(board[row + (dirV * -1), column + (dirH * -1)]);     
+        queueH.Enqueue(board[row + (dirV * -1), column + (dirH * -1)]);
+
+        int pivotRow = row + (dirV * -1);
+        int pivotColumn = column + (dirH * -1);
 
         // 맞는 짝을 상,하 탐색한다
-        // 야이 개새캬 일 똑바로 안해? 
         for (int i = 1; i < 7; ++i)
         {
-            if (!R && column + i < 7 && board[row, column + i].tag == type)
-                queueW.Enqueue(board[row, column + i]);
-            else
-                R = true;
-            if (!L && column - i >= 0 && board[row, column - i].tag == type)
-                queueW.Enqueue(board[row, column - i]);
-            else
-                L = true;
-            if (!U && row + i < 7 && board[row + i, column].tag == type)
-                queueH.Enqueue(board[row + i, column]);
-            else
-                U = true;
-            if (!D && row - i >= 0 && board[row - i, column].tag == type)
-                queueH.Enqueue(board[row - i, column]);
-            else
-                D = true;
-            Debug.Log("asd : " + (row + i));
+            if (column + i != pivotColumn)
+                if (!R && column + i < 7 && board[row, column + i]
+                    && board[row, column + i].tag == type)
+                    queueW.Enqueue(board[row, column + i]);
+                else
+                    R = true;
+
+            if (column - i != pivotColumn)
+                if (!L && column - i >= 0 && board[row, column - i] && board[row, column - i].tag == type)
+                    queueW.Enqueue(board[row, column - i]);
+                else
+                    L = true;
+
+            if (row + i != pivotRow)
+                if (!U && row + i < 7 && board[row + i, column] && board[row + i, column].tag == type)
+                    queueH.Enqueue(board[row + i, column]);
+                else
+                    U = true;
+
+            if (row - i != pivotRow)
+                if (!D && row - i >= 0 && board[row - i, column] && board[row - i, column].tag == type)
+                    queueH.Enqueue(board[row - i, column]);
+                else
+                    D = true;
         }
         
-        //Debug.Log("cnt1 : " + queueW.Count);
-       // Debug.Log("cnt2 : " + queueH.Count);
-
         if (queueW.Count >= 3)
         {
-            while(queueW.Count > 0)
+            // 짝이 맞는 동물타일의 개수만큼 점수를 올려준다. 
+            user.AddTargetScore(SCORE_INCREASE * queueW.Count);
+
+            // 큐가 공백일 때 까지 계속 Dequeue.
+            while (queueW.Count > 0)
             {
                 queueW.Dequeue().GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
             }
-            //    Destroy(queueW.Dequeue());
+            
             result1 = true;
         }
 
         if (queueH.Count >= 3)
         {
+            // 짝이 맞는 동물타일의 개수만큼 점수를 올려준다.
+            user.AddTargetScore(SCORE_INCREASE * queueH.Count);
+            
             // 만약 이미 앞에서 기준이 되는 동물이 없어졌다면 팝.
-            if(result1)
+            if (result1)
                 queueH.Dequeue();
 
+            // 큐가 공백일 때 까지 계속 Dequeue.
             while (queueH.Count > 0)
             {
                 queueH.Dequeue().GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
@@ -240,6 +280,44 @@ public class GameManager : MonoBehaviour
             result2 = true;
         }
         return result1 || result2;
+    }
+
+    // 빈 공간이 생긴 세로줄에 동물타일을 생성한다. 
+    IEnumerator Refill()
+    {
+        bReFilling = true;
+        bool bEmpty = false;
+
+        while(true)
+        {
+            yield return new WaitForSeconds(TIMING);
+            for (int i = 0; i < 7; ++i)
+            {
+                // 각 열이 비어있는지 확인 후 
+                if (board[6, i] == null)
+                {
+                    // 비어있으면 새로운 동물타일을 생성한다. 
+                    bEmpty = true;
+                    CreateAnimalTile(i, 6, false);
+                }
+            }
+
+            if (!bEmpty)
+            {
+                bReFilling = false;
+                bDropping = false;
+
+                // 모두 꽉 찼다면 동물타일 짝을 검사한다. 
+                for(int i = 0; i < WIDTH; ++i)
+                {
+                    CheckAnimal(6, i, 0, 0, board[6, i].tag);
+                }
+                break;
+            }
+            
+            bEmpty = false;
+        }
+
     }
 
 }
