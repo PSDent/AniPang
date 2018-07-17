@@ -159,22 +159,6 @@ public class GameManager : MonoBehaviour
         return randAnimal;
     }
 
-    // 동물 타일에 페이드 효과를 준다.
-    IEnumerator FadeIn()
-    {
-        while (board[6, 6].GetComponent<SpriteRenderer>().color.a < 1.0f)
-        {
-            for (int i = 0; i < HEIGHT; ++i)
-            {
-                for (int j = 0; j < WIDTH; ++j)
-                {
-                    board[i, j].GetComponent<SpriteRenderer>().color += new Color(0.0f, 0.0f, 0.0f, FADE_VALUE);
-                }
-                yield return new WaitForSeconds(FADE_IN_DELAY);
-            }
-        }
-    }
-
     private void FixedUpdate()
     {
         if(!bReFilling)
@@ -201,6 +185,32 @@ public class GameManager : MonoBehaviour
         StartCoroutine("Refill");
     }
 
+    // 피버모드를 적용한다.
+    void FeverMode(Queue<GameObject> queue)
+    {
+        // 본래 짝이 맞는 동물타일이 들어있는 큐를 복사
+        Queue<GameObject> tempQueue = new Queue<GameObject>(queue);
+
+        // 복사된 큐를 dequeue 하면서 상하좌우의 타일을 모두 없앤다.
+        while(tempQueue.Count > 0)
+        {
+            int row = 0, column = 0;
+            tempQueue.Dequeue().GetComponent<AnimalBox>().GetArrNumber(ref row, ref column);
+
+            if (row - 1 >= 0 && board[row - 1, column])
+                board[row - 1, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            if (row + 1 < HEIGHT && board[row + 1, column])
+                board[row + 1, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            if (column - 1 >= 0 && board[row, column - 1])
+                board[row, column - 1].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            if (column + 1 < WIDTH && board[row, column + 1])
+                board[row, column + 1].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+        }
+    }
+
+    //
+    // 여기에 무언가 버그가 하나 있는 듯 하니 여유 있으면 고치기 바람. 
+    //
     // 동물타일을 이동시킬 때마다 3개 이상의 짝이 존재하는지 검사한다.
     public bool CheckAnimal(int row, int column, int dirV, int dirH, string type)
     {
@@ -251,8 +261,15 @@ public class GameManager : MonoBehaviour
         
         if (queueW.Count >= 3)
         {
+            user.AddBombGage(queueW.Count * User.BOMB_INCREASE);
+            // 콤보를 추가한다.
+            user.AddCombo();
             // 짝이 맞는 동물타일의 개수만큼 점수를 올려준다. 
             user.AddTargetScore(SCORE_INCREASE * queueW.Count);
+
+            // 피버상태라면 피버를 적용한다.
+            if(user.IsFeverMode())
+                FeverMode(queueW);
 
             // 큐가 공백일 때 까지 계속 Dequeue.
             while (queueW.Count > 0)
@@ -265,9 +282,16 @@ public class GameManager : MonoBehaviour
 
         if (queueH.Count >= 3)
         {
+            user.AddBombGage(queueH.Count * User.BOMB_INCREASE);
+            // 콤보를 추가한다.
+            user.AddCombo();
             // 짝이 맞는 동물타일의 개수만큼 점수를 올려준다.
             user.AddTargetScore(SCORE_INCREASE * queueH.Count);
-            
+
+            // 피버상태라면 피버를 적용한다. 
+            if (user.IsFeverMode())
+                FeverMode(queueH);
+
             // 만약 이미 앞에서 기준이 되는 동물이 없어졌다면 팝.
             if (result1)
                 queueH.Dequeue();
@@ -277,9 +301,27 @@ public class GameManager : MonoBehaviour
             {
                 queueH.Dequeue().GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
             }
+            
             result2 = true;
         }
         return result1 || result2;
+    }
+
+    // 동물 타일에 페이드 효과를 준다.
+    IEnumerator FadeIn()
+    {
+        while (board[6, 6].GetComponent<SpriteRenderer>().color.a < 1.0f)
+        {
+            for (int i = 0; i < HEIGHT; ++i)
+            {
+                for (int j = 0; j < WIDTH; ++j)
+                {
+                    if(board[i, j])
+                        board[i, j].GetComponent<SpriteRenderer>().color += new Color(0.0f, 0.0f, 0.0f, FADE_VALUE);
+                }
+                yield return new WaitForSeconds(FADE_IN_DELAY);
+            }
+        }
     }
 
     // 빈 공간이 생긴 세로줄에 동물타일을 생성한다. 
@@ -320,4 +362,4 @@ public class GameManager : MonoBehaviour
 
     }
 
-}
+}   

@@ -72,10 +72,14 @@ public class AnimalBox : MonoBehaviour
         if (vertical != 0)
         {
             // 동물 타일이 절반 이상 넘어간 후 마우스를 놨다면
+            // 여기 뭔가 문제가 있음. 
             if (originPos.y + DRAG_RANGE / DRAG_RANGE_DIV < transform.position.y || originPos.y - DRAG_RANGE / DRAG_RANGE_DIV > transform.position.y)
             {
                 if (row + dirV < 0 || row + dirV > 6)
+                {
+                    transform.position = originPos;
                     return;
+                }
 
                 GameObject ChangeTile = gameMgr.GetAnimalTile()[row + dirV, column];
                 bOne = gameMgr.CheckAnimal(row + dirV, column, dirV, dirH, transform.tag);
@@ -88,7 +92,6 @@ public class AnimalBox : MonoBehaviour
                     fix = false;
                     return;
                 }
-
                 Switching();
             }
             // 절반을 넘지 못했다면 다시 원위치 시킨다. 
@@ -105,7 +108,10 @@ public class AnimalBox : MonoBehaviour
             if (originPos.x + DRAG_RANGE / DRAG_RANGE_DIV < transform.position.x || originPos.x - DRAG_RANGE / DRAG_RANGE_DIV > transform.position.x)
             {
                 if (column + dirH < 0 || column + dirH > 6)
+                {
+                    transform.position = originPos;
                     return;
+                }
 
                 // 넘어간 타일 위치
                 GameObject ChangeTile = gameMgr.GetAnimalTile()[row, column + dirH];
@@ -129,6 +135,8 @@ public class AnimalBox : MonoBehaviour
                 fix = false;
             }
         }
+        //if (originPos != transform.position)
+           transform.position = originPos;
     }
 
     // 마우스가 드래그 된 방향에 따라 동물 타일을 교환시킨다.
