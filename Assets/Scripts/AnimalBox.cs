@@ -10,6 +10,7 @@ public class AnimalBox : MonoBehaviour
     const float DROP_SPEED = 0.08f;
     const float DROP_TIME = 0.01f;
 
+    User user;
     GameManager gameMgr;
     BoxCollider2D boxColl;
     Vector3 originPos;
@@ -20,12 +21,16 @@ public class AnimalBox : MonoBehaviour
     float vertical = 0, horizontal = 0;
 
     // 플래그 
+    bool bGhost = false;
+    bool bLight = false;
     bool bStart = false;
     bool bDropping = false;
+    bool bBomb = false;
 
     // Use this for initialization
     void Start()
     {
+        user = GameObject.Find("GameManager").GetComponent<User>();
         originPos = transform.position;
         boxColl = GetComponent<BoxCollider2D>();
         gameMgr = GameObject.Find("GameManager").GetComponent<GameManager>();
@@ -37,6 +42,8 @@ public class AnimalBox : MonoBehaviour
         {
             StartCoroutine("Drop");
         }
+
+       // if(bBomb)
     }
 
     void Switching()
@@ -61,6 +68,14 @@ public class AnimalBox : MonoBehaviour
         gameMgr.GetAnimalTile()[row, column].GetComponent<AnimalBox>().SetArrNumber(row, column);
         gameMgr.GetAnimalTile()[row + dirV, column + dirH].GetComponent<AnimalBox>().SetArrNumber(row + dirV, column + dirH);
         //Debug.Log("After Row : " + row + " Column : " + column);
+    }
+
+    private void OnMouseDown()
+    {
+        if (bBomb)
+            Bomb();
+        else if (bGhost)
+            GhostBlock();
     }
 
     // 타일 이동시 짝이 3 이상이라면 그 때 움직이도록 수정할 것.
@@ -215,6 +230,73 @@ public class AnimalBox : MonoBehaviour
     {
         row = this.row;
         column = this.column;
+    }
+
+    void Bomb()
+    {
+        for (int i = 0; i < GameManager.WIDTH; ++i)
+            if (column != i)
+                gameMgr.GetAnimalTile()[0, i].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+
+        for (int i = 1; i < GameManager.WIDTH; ++i)
+        {
+            if (column + i < GameManager.WIDTH && gameMgr.GetAnimalTile()[row, column + i])
+                gameMgr.GetAnimalTile()[row, column + i].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            if (column - i >= 0 && gameMgr.GetAnimalTile()[row, column - i])
+                gameMgr.GetAnimalTile()[row, column - i].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            if (row + i < GameManager.HEIGHT && gameMgr.GetAnimalTile()[row + i, column])
+                gameMgr.GetAnimalTile()[row + i, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            if (row - i >= 0 && gameMgr.GetAnimalTile()[row - i, column])
+                gameMgr.GetAnimalTile()[row - i, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+        }
+
+        gameMgr.GetAnimalTile()[row, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+    }
+
+    void LightBlock()
+    {
+        
+    }
+
+    void GhostBlock()
+    {
+        string str;
+        int val = Random.Range(0, 7);
+        GameManager.AnimalType animalType = (GameManager.AnimalType)val;
+        str = animalType.ToString();
+
+        int cnt = 0;
+        for (int i = 0; i < GameManager.HEIGHT; ++i)
+        {
+            for (int j = 0; j < GameManager.WIDTH; ++j)
+            {
+                if (gameMgr.GetAnimalTile()[i, j] && gameMgr.GetAnimalTile()[i, j].tag == str)
+                {
+                    ++cnt;
+                    gameMgr.GetAnimalTile()[i, j].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+                }
+            }
+        }
+
+        user.Addition(cnt);
+        gameMgr.GetAnimalTile()[row, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+    }
+
+    public void ActiveBombFlag()
+    {
+        bBomb = true;
+    }
+
+    public void ActiveGhostFlag()
+    {
+        bGhost = true;
+    }
+
+    public void SetColor(int r, int g, int b, int a)
+    {
+        Color32 color = new Color(r, g, b, a);
+
+        GetComponent<SpriteRenderer>().color = color;
     }
 
     IEnumerator Drop()

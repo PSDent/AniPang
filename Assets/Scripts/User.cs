@@ -12,6 +12,7 @@ public class User : MonoBehaviour
     const float WAIT_TIME = 3.0f;
     const float FEVER_TIME = 3.0f;
     const float FLASH_DURATION = 0.1f;
+    const int SCORE_INCREASE = 300;
     public const float BOMB_INCREASE = 2.0f;
 
     GameManager gameMgr;
@@ -21,6 +22,7 @@ public class User : MonoBehaviour
     Color flashColor;
     Color originFlashColor;
 
+    bool bBombMode = false;
     bool bFeverMode = false;
     bool bFadeText = false;
     bool bStartedFever = false;
@@ -32,11 +34,6 @@ public class User : MonoBehaviour
     int nextCombo = 5;
 
     public float bombGage = 0;
-
-    public void AddBombGage(float val)
-    {
-        bombGage += val;
-    }
 
     private void Awake()
     {
@@ -75,17 +72,37 @@ public class User : MonoBehaviour
         scoreText.text = score.ToString();
     }
 
-    public void AddTargetScore(int val)
+    public void Addition(int cnt)
     {
+        AddBombGage(cnt * BOMB_INCREASE);
+        // 콤보를 추가한다.
+        AddCombo();
+        // 짝이 맞는 동물타일의 개수만큼 점수를 올려준다.
+        AddTargetScore(SCORE_INCREASE * cnt);
+    }
+
+    void AddTargetScore(int val)
+    {
+        score = targetScore;
         // 획득한 기본 점수에 콤보를 적용한다. 
         targetScore += val * combo;
     }
 
-    public void AddCombo()
+    void AddCombo()
     {
         if (!bFadeText)
             StartCoroutine("FadeInCombo");
         ++combo;
+    }
+
+    void AddBombGage(float val)
+    {
+        bombGage += val;
+        if (bombGage >= 100)
+        {
+            bombGage = 0;
+            gameMgr.DecideBomb();
+        }
     }
 
     void ComboText()

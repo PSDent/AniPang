@@ -5,8 +5,8 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     // 상수
-    const int WIDTH = 7;
-    const int HEIGHT = 7;
+    public const int WIDTH = 7;
+    public const int HEIGHT = 7;
 
     const float CREATE_Y_POS = 0.8f;
     const float SPACE = 0.8f;
@@ -16,10 +16,9 @@ public class GameManager : MonoBehaviour
     const float FADE_IN_DELAY = 0.001f;
     const float FADE_VALUE = 0.035f;
     public const float TIMING = 0.2f;
-    const int SCORE_INCREASE = 300;
 
     // 0-Monkey, 1-Gigaffe, 2-Panda, 3-Penguin, 4-Rabbit, 5-Snake, 6-Pig
-    enum AnimalType { Monkey, Giraffe, Panda, Penguin, Rabbit, Snake, Pig };
+    public enum AnimalType { Monkey, Giraffe, Panda, Penguin, Rabbit, Snake, Pig };
 
     public GameObject[] animal;
     GameObject[,] board;
@@ -163,6 +162,7 @@ public class GameManager : MonoBehaviour
     {
         if(!bReFilling)
             StartCoroutine("Refill");
+        //CheckThereIsAnswer();
     }
 
     public GameObject[,] GetAnimalTile()
@@ -208,27 +208,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    //
-    // 여기에 무언가 버그가 하나 있는 듯 하니 여유 있으면 고치기 바람. 
-    //
-    // 동물타일을 이동시킬 때마다 3개 이상의 짝이 존재하는지 검사한다.
-    public bool CheckAnimal(int row, int column, int dirV, int dirH, string type)
+    // 가상으로 동물을 상하좌우 옮김으로서 시뮬레이션으로 맵상에 짝이 존재하는지 확인
+    //bool ThereIsPair_NQ(int row, int column, string type)
+    //{
+
+    //}
+
+    // 이 함수의 큐 인자를 뺄 수 있도록 고안하여 힌트, 리셋을 구현할 것
+    bool ThereIsPair(ref Queue<GameObject> queueW, ref Queue<GameObject> queueH, int row, int column, int dirV, int dirH, string type)
     {
-        Queue<GameObject> queueW = new Queue<GameObject>();
-        Queue<GameObject> queueH = new Queue<GameObject>();
-        bool L, R, U, D, result1, result2;
-        result1 = result2 = L = R = U = D = false;
-
-        if (row + (dirV * -1) >= 0 && row + (dirV * -1) < HEIGHT &&
-            column + (dirH * -1) >= 0 && column + (dirH * -1) < WIDTH)
-            if (board[row + (dirV * -1), column + (dirH * -1)] == null)
-                return false;
-
-        queueW.Enqueue(board[row + (dirV * -1), column + (dirH * -1)]);     
-        queueH.Enqueue(board[row + (dirV * -1), column + (dirH * -1)]);
-
         int pivotRow = row + (dirV * -1);
         int pivotColumn = column + (dirH * -1);
+        bool L, R, U, D, result1, result2;
+        result1 = result2 = L = R = U = D = false;
 
         // 맞는 짝을 상,하 탐색한다
         for (int i = 1; i < 7; ++i)
@@ -258,18 +250,43 @@ public class GameManager : MonoBehaviour
                 else
                     D = true;
         }
+
+        if (queueW.Count >= 3 || queueH.Count >= 3)
+            return true;
+        else
+            return false;
+    }
+
+    //
+    // 여기에 무언가 버그가 하나 있는 듯 하니 여유 있으면 고치기 바람. 
+    //
+    // 동물타일을 이동시킬 때마다 3개 이상의 짝이 존재하는지 검사한다.
+    public bool CheckAnimal(int row, int column, int dirV, int dirH, string type)
+    {
+        Queue<GameObject> queueW = new Queue<GameObject>();
+        Queue<GameObject> queueH = new Queue<GameObject>();
+        bool /*L, R, U, D, */result1, result2;
+        result1 = result2 /*= L = R = U = D*/ = false;
+
+        if (row + (dirV * -1) >= 0 && row + (dirV * -1) < HEIGHT &&
+            column + (dirH * -1) >= 0 && column + (dirH * -1) < WIDTH)
+            if (board[row + (dirV * -1), column + (dirH * -1)] == null)
+                return false;
+
+        queueW.Enqueue(board[row + (dirV * -1), column + (dirH * -1)]);     
+        queueH.Enqueue(board[row + (dirV * -1), column + (dirH * -1)]);
+
+        ThereIsPair(ref queueW, ref queueH, row, column, dirV, dirH, type);
         
         if (queueW.Count >= 3)
         {
-            user.AddBombGage(queueW.Count * User.BOMB_INCREASE);
-            // 콤보를 추가한다.
-            user.AddCombo();
-            // 짝이 맞는 동물타일의 개수만큼 점수를 올려준다. 
-            user.AddTargetScore(SCORE_INCREASE * queueW.Count);
+            user.Addition(queueW.Count);
 
             // 피버상태라면 피버를 적용한다.
             if(user.IsFeverMode())
                 FeverMode(queueW);
+            if (queueW.Count == 4)
+                DecideGhost();
 
             // 큐가 공백일 때 까지 계속 Dequeue.
             while (queueW.Count > 0)
@@ -282,15 +299,13 @@ public class GameManager : MonoBehaviour
 
         if (queueH.Count >= 3)
         {
-            user.AddBombGage(queueH.Count * User.BOMB_INCREASE);
-            // 콤보를 추가한다.
-            user.AddCombo();
-            // 짝이 맞는 동물타일의 개수만큼 점수를 올려준다.
-            user.AddTargetScore(SCORE_INCREASE * queueH.Count);
+            user.Addition(queueW.Count);
 
             // 피버상태라면 피버를 적용한다. 
             if (user.IsFeverMode())
                 FeverMode(queueH);
+            if (queueH.Count == 4)
+                DecideGhost();
 
             // 만약 이미 앞에서 기준이 되는 동물이 없어졌다면 팝.
             if (result1)
@@ -362,4 +377,66 @@ public class GameManager : MonoBehaviour
 
     }
 
+    // 폭탄을 랜덤으로 정한다.
+    public void DecideBomb()
+    {
+        int x = Random.Range(0, 7);
+        int y = Random.Range(0, 7);
+
+        board[y, x].GetComponent<AnimalBox>().SetColor(255, 0, 0, 255);
+        board[y, x].GetComponent<AnimalBox>().ActiveBombFlag();
+    }
+
+    // 유령을 랜덤으로 정한다.
+    void DecideGhost()
+    {
+        int x = Random.Range(0, 7);
+        int y = Random.Range(0, 7);
+
+        while (!board[y, x].gameObject)
+        {
+            x = Random.Range(0, 7);
+            y = Random.Range(0, 7);
+        }
+        board[y, x].GetComponent<AnimalBox>().SetColor(0, 0, 0, 127);
+        board[y, x].GetComponent<AnimalBox>().ActiveGhostFlag();
+    }
+
+    void ResetBoard()
+    {
+        for (int i = 0; i < HEIGHT; ++i)
+        {
+            for (int j = 0; j < WIDTH; ++j)
+            {
+                Destroy(board[i, j].gameObject);
+            }
+        }
+    }
+
+    void Hint(int row, int column)
+    {
+
+    }
+
+    //void CheckThereIsAnswer()
+    //{
+    //    bool bHasPair = false;
+
+    //    for (int i = 0; i < HEIGHT; ++i)
+    //    {
+    //        for (int j = 0; j < WIDTH; ++j)
+    //        {
+    //            if (board[i,j] && ThereIsPair_NQ(i, j,board[i, j].tag) == true)
+    //            {
+    //                bHasPair = true;
+    //                break;
+    //            }
+    //        }
+    //    }
+
+    //    if(!bHasPair)
+    //    {
+    //        ResetBoard();
+    //    }
+    //}
 }   
