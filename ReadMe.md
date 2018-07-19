@@ -25,7 +25,7 @@ Animal 	    -
 https://opengameart.org/content/animal-pack-redux
 
 Number      - 
-https://opengameart.org/content/numbers-collection
+https://opengameart.org/content/numbers-collection (CC_BY 3.0)
 
 Font 	    -
 https://opengameart.org/content/kenney-fonts
