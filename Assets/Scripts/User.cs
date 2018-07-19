@@ -40,7 +40,7 @@ public class User : MonoBehaviour
         scoreText = GameObject.Find("Canvas").transform.Find("ScoreBar")
     .Find("ScoreNum").GetComponent<Text>();
 
-        comboText = GameObject.Find("Canvas").transform.Find("ComboText")
+        comboText = GameObject.Find("Canvas").transform.Find("ScoreBar").Find("ComboText")
             .GetComponent<Text>();
 
         feverImage = GameObject.Find("Canvas").transform.Find("FeverImage")
@@ -70,6 +70,11 @@ public class User : MonoBehaviour
 
         ComboText();
         scoreText.text = score.ToString();
+    }
+
+    public int GetScore()
+    {
+        return targetScore;
     }
 
     public void Addition(int cnt)
@@ -115,6 +120,13 @@ public class User : MonoBehaviour
         return bFeverMode;
     }
 
+    void Hint(int x, int y)
+    {
+        Debug.Log("Hint : " + x + " " + y);
+        if (gameMgr.GetAnimalTile()[y, x])
+            gameMgr.GetAnimalTile()[y, x].GetComponent<AnimalBox>().SetCrossHair();
+    }
+
     IEnumerator FeverTimer()
     {
         bFeverMode = true;
@@ -154,6 +166,9 @@ public class User : MonoBehaviour
         }
         Debug.Log("Fade Out");
         combo = 0;
+
+        Reference.POINT hintPoint = gameMgr.CheckThereIsAnswer();
+        Hint(hintPoint.x, hintPoint.y);
     }
 
     // 일정 시간이 지나도 콤보가 변동이 없는지 확인하기 위한 타이머 

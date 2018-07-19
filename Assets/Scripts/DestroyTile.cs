@@ -25,6 +25,9 @@ public class DestroyTile : MonoBehaviour {
             spriteRenderer.color = color;
             yield return new WaitForSeconds(TIME);
         }
+
+        if (transform.GetComponentInParent<AnimalBox>().GetLightFlag())
+            transform.GetComponentInParent<AnimalBox>().LightBlock();
         Destroy(transform.parent.gameObject);
     }
 }

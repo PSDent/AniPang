@@ -15,6 +15,9 @@ public class GameManager : MonoBehaviour
     const float CREATE_DELAY = 0.3f;
     const float FADE_IN_DELAY = 0.001f;
     const float FADE_VALUE = 0.035f;
+    const int LIGHT_COUNT = 4;
+    const int GHOST_COUNT = 5;
+
     public const float TIMING = 0.2f;
 
     // 0-Monkey, 1-Gigaffe, 2-Panda, 3-Penguin, 4-Rabbit, 5-Snake, 6-Pig
@@ -27,6 +30,7 @@ public class GameManager : MonoBehaviour
     bool bReFilling = false;
     bool bDropping = false;
     bool bStart = true;
+    bool[,] pairBoard;
 
     // Use this for initialization
     void Start()
@@ -35,8 +39,10 @@ public class GameManager : MonoBehaviour
         // 동물 타일을 담을 2차원 배열을 할당
         board = new GameObject[HEIGHT, WIDTH];
 
+        pairBoard = new bool[3, 3];
+
         if (bStart)
-            Create();
+            Create(true);
     }
 
     public bool IsDropping()
@@ -45,19 +51,22 @@ public class GameManager : MonoBehaviour
     }
 
     // 동물 타일을 게임 시작 전 생성한다. 
-    void Create()
+    void Create(bool bFade)
     {
         for (int i = 0; i < HEIGHT; ++i)
         {
             for (int j = 0; j < WIDTH; ++j)
             {
-                CreateAnimalTile(j, i, true);
+                CreateAnimalTile(j, i, bFade);
             }
         }
         bStart = false;
 
         CheckOverlap();
-        StartCoroutine("FadeIn");
+        DecideLight();
+        if(bFade)
+            StartCoroutine("FadeIn");
+        CheckThereIsAnswer();
     }
 
     void CreateAnimalTile(int x, int y, bool alphaOn)
@@ -158,7 +167,7 @@ public class GameManager : MonoBehaviour
         return randAnimal;
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
         if(!bReFilling)
             StartCoroutine("Refill");
@@ -197,13 +206,13 @@ public class GameManager : MonoBehaviour
             int row = 0, column = 0;
             tempQueue.Dequeue().GetComponent<AnimalBox>().GetArrNumber(ref row, ref column);
 
-            if (row - 1 >= 0 && board[row - 1, column])
+            if (row - 1 >= 0 && board[row - 1, column] && board[row - 1, column].tag != "Bomb")
                 board[row - 1, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
-            if (row + 1 < HEIGHT && board[row + 1, column])
+            if (row + 1 < HEIGHT && board[row + 1, column] && board[row + 1, column].tag != "Bomb" )
                 board[row + 1, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
-            if (column - 1 >= 0 && board[row, column - 1])
+            if (column - 1 >= 0 && board[row, column - 1] && board[row, column - 1].tag != "Bomb" )
                 board[row, column - 1].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
-            if (column + 1 < WIDTH && board[row, column + 1])
+            if (column + 1 < WIDTH && board[row, column + 1] && board[row, column + 1].tag != "Bomb")
                 board[row, column + 1].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
         }
     }
@@ -226,17 +235,18 @@ public class GameManager : MonoBehaviour
         for (int i = 1; i < 7; ++i)
         {
             if (column + i != pivotColumn)
-                if (!R && column + i < 7 && board[row, column + i]
-                    && board[row, column + i].tag == type)
+                if (!R && column + i < 7 && board[row, column + i] && board[row, column + i].tag == type)
                     queueW.Enqueue(board[row, column + i]);
                 else
                     R = true;
+
 
             if (column - i != pivotColumn)
                 if (!L && column - i >= 0 && board[row, column - i] && board[row, column - i].tag == type)
                     queueW.Enqueue(board[row, column - i]);
                 else
                     L = true;
+
 
             if (row + i != pivotRow)
                 if (!U && row + i < 7 && board[row + i, column] && board[row + i, column].tag == type)
@@ -246,6 +256,7 @@ public class GameManager : MonoBehaviour
 
             if (row - i != pivotRow)
                 if (!D && row - i >= 0 && board[row - i, column] && board[row - i, column].tag == type)
+
                     queueH.Enqueue(board[row - i, column]);
                 else
                     D = true;
@@ -285,8 +296,10 @@ public class GameManager : MonoBehaviour
             // 피버상태라면 피버를 적용한다.
             if(user.IsFeverMode())
                 FeverMode(queueW);
-            if (queueW.Count == 4)
+            if (queueW.Count == GHOST_COUNT)
                 DecideGhost();
+            else if (queueW.Count == LIGHT_COUNT)
+                DecideLight();
 
             // 큐가 공백일 때 까지 계속 Dequeue.
             while (queueW.Count > 0)
@@ -304,8 +317,10 @@ public class GameManager : MonoBehaviour
             // 피버상태라면 피버를 적용한다. 
             if (user.IsFeverMode())
                 FeverMode(queueH);
-            if (queueH.Count == 4)
+            if (queueH.Count == GHOST_COUNT)
                 DecideGhost();
+            else if (queueH.Count == LIGHT_COUNT)
+                DecideLight();
 
             // 만약 이미 앞에서 기준이 되는 동물이 없어졌다면 팝.
             if (result1)
@@ -383,8 +398,15 @@ public class GameManager : MonoBehaviour
         int x = Random.Range(0, 7);
         int y = Random.Range(0, 7);
 
-        board[y, x].GetComponent<AnimalBox>().SetColor(255, 0, 0, 255);
+        while(!board[y, x])
+        {
+            x = Random.Range(0, 7);
+            y = Random.Range(0, 7);
+        }
+
+        board[y, x].GetComponent<AnimalBox>().SetColor(255, 255, 255, 255);
         board[y, x].GetComponent<AnimalBox>().ActiveBombFlag();
+        board[y, x].GetComponent<AnimalBox>().tag = "Bomb";
     }
 
     // 유령을 랜덤으로 정한다.
@@ -398,8 +420,25 @@ public class GameManager : MonoBehaviour
             x = Random.Range(0, 7);
             y = Random.Range(0, 7);
         }
-        board[y, x].GetComponent<AnimalBox>().SetColor(0, 0, 0, 127);
+
+        board[y, x].GetComponent<AnimalBox>().SetColor(1.0f, 1.0f, 1.0f, 0.5f);
         board[y, x].GetComponent<AnimalBox>().ActiveGhostFlag();
+    }
+
+    // 반짝이는 블록을 랜덤으로 정한다.
+    void DecideLight()
+    {
+        int x = Random.Range(0, 7);
+        int y = Random.Range(0, 7);
+
+        while (!board[y, x].gameObject)
+        {
+            x = Random.Range(0, 7);
+            y = Random.Range(0, 7);
+        }
+
+        board[y, x].GetComponent<AnimalBox>().SetColor(0.0f, 0.0f, 1.0f, 1.0f);
+        board[y, x].GetComponent<AnimalBox>().ActiveLightFlag();
     }
 
     void ResetBoard()
@@ -413,30 +452,68 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void Hint(int row, int column)
+    
+    //
+    // 뭔가 빠진 경우의 수가 있는 듯 하다. 잘 찾아서 고치자.
+    //
+    // 짝이 있는지 체크하는 함수를 잘 구현할 것 (각도 이용하는게 좋을 듯 하다)
+    public Reference.POINT CheckThereIsAnswer()
     {
+        bool bHasPair = false;
 
+        for (int m = 1; m < WIDTH - 1; ++m)
+        {
+            for(int n = 1; n < HEIGHT - 1; ++n)
+            {
+                GameObject pivotObj = board[m, n];
+
+                if (board[m, n].GetComponent<AnimalBox>().IsSpecial())
+                    return new Reference.POINT(n, m);
+
+                for (int i = -1; i < 2; ++i)
+                {
+                    for (int j = -1; j < 2; ++j)
+                    {
+                        if (board[m + i, n + j].tag == pivotObj.tag)
+                            pairBoard[i + 1, j + 1] = true;
+                        else
+                            pairBoard[i + 1, j + 1] = false;
+                    }
+                }
+
+                if (pairBoard[0, 0])
+                {
+                    if (pairBoard[0, 2] || pairBoard[2, 0])
+                        bHasPair = true;
+                    else if (pairBoard[2, 1] || pairBoard[1, 2])
+                        bHasPair = true;
+                }
+                else if (pairBoard[2, 2])
+                {
+                    if (pairBoard[2, 0] || pairBoard[0, 2])
+                        bHasPair = true;
+                    else if (pairBoard[1, 0] || pairBoard[0, 1])
+                        bHasPair = true;
+                }
+                else if (pairBoard[0, 1] && pairBoard[2, 0])
+                    bHasPair = true;
+                else if (pairBoard[0, 2] && (pairBoard[1, 0] || pairBoard[2, 1]))
+                    bHasPair = true;
+                else if (pairBoard[1, 0] && pairBoard[0, 2])
+                    bHasPair = true;
+                else if (pairBoard[1, 2] && pairBoard[2, 0])
+                    bHasPair = true;
+                else if (pairBoard[2, 0] && pairBoard[0, 1])
+                    bHasPair = true;
+                else if (pairBoard[2, 1] && pairBoard[0, 2])
+                    bHasPair = true;
+
+                if (bHasPair)
+                    return new Reference.POINT(n, m);
+            }
+        }
+
+        Create(false);
+        return new Reference.POINT(-1, -1);
     }
-
-    //void CheckThereIsAnswer()
-    //{
-    //    bool bHasPair = false;
-
-    //    for (int i = 0; i < HEIGHT; ++i)
-    //    {
-    //        for (int j = 0; j < WIDTH; ++j)
-    //        {
-    //            if (board[i,j] && ThereIsPair_NQ(i, j,board[i, j].tag) == true)
-    //            {
-    //                bHasPair = true;
-    //                break;
-    //            }
-    //        }
-    //    }
-
-    //    if(!bHasPair)
-    //    {
-    //        ResetBoard();
-    //    }
-    //}
 }   

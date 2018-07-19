@@ -10,6 +10,7 @@ public class AnimalBox : MonoBehaviour
     const float DROP_SPEED = 0.08f;
     const float DROP_TIME = 0.01f;
 
+    SpriteRenderer spriteRenderer;
     User user;
     GameManager gameMgr;
     BoxCollider2D boxColl;
@@ -34,9 +35,10 @@ public class AnimalBox : MonoBehaviour
         originPos = transform.position;
         boxColl = GetComponent<BoxCollider2D>();
         gameMgr = GameObject.Find("GameManager").GetComponent<GameManager>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
         if (!bDropping && row > 0 && gameMgr.GetAnimalTile()[row - 1, column] == null)
         {
@@ -210,12 +212,12 @@ public class AnimalBox : MonoBehaviour
         }
     }
 
-    public void SetOriginPos(Vector3 originPos)
+    void SetOriginPos(Vector3 originPos)
     {
         this.originPos = originPos;
     }
 
-    public Vector3 GetOriginPos()
+    Vector3 GetOriginPos()
     {
         return originPos;
     }
@@ -234,30 +236,63 @@ public class AnimalBox : MonoBehaviour
 
     void Bomb()
     {
+        int cnt = 0;
+
         for (int i = 0; i < GameManager.WIDTH; ++i)
             if (column != i)
+            {
+                ++cnt;
                 gameMgr.GetAnimalTile()[0, i].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            }
 
         for (int i = 1; i < GameManager.WIDTH; ++i)
         {
             if (column + i < GameManager.WIDTH && gameMgr.GetAnimalTile()[row, column + i])
+            {
+                ++cnt;
                 gameMgr.GetAnimalTile()[row, column + i].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            }
             if (column - i >= 0 && gameMgr.GetAnimalTile()[row, column - i])
+            {
+                ++cnt;
                 gameMgr.GetAnimalTile()[row, column - i].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            }
             if (row + i < GameManager.HEIGHT && gameMgr.GetAnimalTile()[row + i, column])
+            {
+                ++cnt;
                 gameMgr.GetAnimalTile()[row + i, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            }
             if (row - i >= 0 && gameMgr.GetAnimalTile()[row - i, column])
+            {
+                ++cnt;
                 gameMgr.GetAnimalTile()[row - i, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+            }
         }
 
+        user.Addition(cnt);
         gameMgr.GetAnimalTile()[row, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
     }
 
-    void LightBlock()
+    public void LightBlock()
     {
-        
+        int cnt = 0;
+        for (int i = -1; i < 2; ++i)
+        {
+            for (int j = -1; j < 2; ++j)
+            {
+                if (row + i >= 0 && row + i < GameManager.HEIGHT && column + j >= 0 && column + j < GameManager.WIDTH)
+                    if (gameMgr.GetAnimalTile()[row + i, column + j] && (row + i != row && column + j != column) 
+                        && gameMgr.GetAnimalTile()[row + i, column + j].tag != "Bomb")
+                    {
+                        ++cnt;
+                        gameMgr.GetAnimalTile()[row + i, column + j].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
+                    }
+            }
+        }
+        user.Addition(cnt); 
     }
 
+    // 유령블럭 혹은 폭탄 함수에 무한루프가 걸린다. 잘 찾아서 해결하자.
     void GhostBlock()
     {
         string str;
@@ -285,6 +320,8 @@ public class AnimalBox : MonoBehaviour
     public void ActiveBombFlag()
     {
         bBomb = true;
+        Debug.Log("ASD");
+        SetSpriteBomb();
     }
 
     public void ActiveGhostFlag()
@@ -292,11 +329,42 @@ public class AnimalBox : MonoBehaviour
         bGhost = true;
     }
 
-    public void SetColor(int r, int g, int b, int a)
+    public void ActiveLightFlag()
     {
-        Color32 color = new Color(r, g, b, a);
+        bLight = true;
+    }
+
+    public bool GetLightFlag()
+    {
+        return bLight;
+    }
+
+    public void SetSpriteBomb()
+    {
+        Debug.Log("SD");
+        spriteRenderer.sprite = Resources.Load<Sprite>(Reference.BOMB);
+    }
+
+    public void SetCrossHair()
+    {
+        transform.Find("EffectSprite").GetComponent<SpriteRenderer>().
+            sprite = Resources.Load<Sprite>(Reference.CROSSHAIR);
+        transform.Find("EffectSprite").GetComponent<SpriteRenderer>().color = new Color(1.0f, 0, 0, 1.0f);
+        transform.Find("EffectSprite").position += new Vector3(0, 0, -2);
+        transform.Find("EffectSprite").GetComponent<SpriteRenderer>().enabled = true;
+
+    }
+
+    public void SetColor(float r, float g, float b, float a)
+    {
+        Color color = new Color(r, g, b, a);
 
         GetComponent<SpriteRenderer>().color = color;
+    }
+
+    public bool IsSpecial()
+    {
+        return bBomb; 
     }
 
     IEnumerator Drop()

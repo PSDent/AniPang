@@ -11,6 +11,7 @@ TagManager:
   - Rabbit
   - Snake
   - Giraffe
+  - Bomb
   layers:
   - Default
   - TransparentFX

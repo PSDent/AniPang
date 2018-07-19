@@ -9,11 +9,26 @@ public class Timer : MonoBehaviour {
     const float DECREASE_TIME = 0.1f;
 
     Slider slider;
+    GameObject denyInput;
+    GameObject ResultPanel;
+    Text resultScore;
+    User user;
 
 	// Use this for initialization
 	void Start () {
         slider = GameObject.Find("Canvas").transform.Find("Slider").GetComponent<Slider>();
         slider.maxValue = time;
+
+        denyInput = GameObject.Find("DenyInput");
+        denyInput.SetActive(false);
+
+        ResultPanel = GameObject.Find("Canvas").transform.Find("Result").gameObject;
+        ResultPanel.SetActive(false);
+
+        resultScore = GameObject.Find("Canvas").transform.Find("Result").Find("Score").GetComponent<Text>();
+
+        user = GameObject.Find("GameManager").GetComponent<User>();
+
         StartCoroutine("RunOutTime");
     }
 
@@ -48,6 +63,9 @@ public class Timer : MonoBehaviour {
 
             yield return new WaitForSeconds(DECREASE_TIME);
         }
+        denyInput.SetActive(true);
+        ResultPanel.SetActive(true);
+        resultScore.text = user.GetScore().ToString();
     }
 
 }
