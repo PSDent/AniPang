@@ -15,8 +15,8 @@ public class GameManager : MonoBehaviour
     const float CREATE_DELAY = 0.3f;
     const float FADE_IN_DELAY = 0.001f;
     const float FADE_VALUE = 0.035f;
-    const int LIGHT_COUNT = 4;
-    const int GHOST_COUNT = 5;
+    const int LIGHT_COUNT = 4;                          
+    const int GHOST_COUNT = 5; 
 
     public const float TIMING = 0.2f;
 
@@ -60,10 +60,12 @@ public class GameManager : MonoBehaviour
                 CreateAnimalTile(j, i, bFade);
             }
         }
+
+        Debug.Log("CreateAnimalTile");
+
         bStart = false;
 
         CheckOverlap();
-        DecideLight();
         if(bFade)
             StartCoroutine("FadeIn");
         CheckThereIsAnswer();
@@ -169,7 +171,7 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        if(!bReFilling)
+        if (!bReFilling)
             StartCoroutine("Refill");
         //CheckThereIsAnswer();
     }
@@ -217,13 +219,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 가상으로 동물을 상하좌우 옮김으로서 시뮬레이션으로 맵상에 짝이 존재하는지 확인
-    //bool ThereIsPair_NQ(int row, int column, string type)
-    //{
-
-    //}
-
-    // 이 함수의 큐 인자를 뺄 수 있도록 고안하여 힌트, 리셋을 구현할 것
     bool ThereIsPair(ref Queue<GameObject> queueW, ref Queue<GameObject> queueH, int row, int column, int dirV, int dirH, string type)
     {
         int pivotRow = row + (dirV * -1);
@@ -239,6 +234,8 @@ public class GameManager : MonoBehaviour
                     queueW.Enqueue(board[row, column + i]);
                 else
                     R = true;
+            else
+                R = true;
 
 
             if (column - i != pivotColumn)
@@ -246,6 +243,8 @@ public class GameManager : MonoBehaviour
                     queueW.Enqueue(board[row, column - i]);
                 else
                     L = true;
+            else
+                L = true;
 
 
             if (row + i != pivotRow)
@@ -253,6 +252,8 @@ public class GameManager : MonoBehaviour
                     queueH.Enqueue(board[row + i, column]);
                 else
                     U = true;
+            else
+                U = true;
 
             if (row - i != pivotRow)
                 if (!D && row - i >= 0 && board[row - i, column] && board[row - i, column].tag == type)
@@ -260,6 +261,8 @@ public class GameManager : MonoBehaviour
                     queueH.Enqueue(board[row - i, column]);
                 else
                     D = true;
+            else
+                D = true;
         }
 
         if (queueW.Count >= 3 || queueH.Count >= 3)
@@ -421,7 +424,7 @@ public class GameManager : MonoBehaviour
             y = Random.Range(0, 7);
         }
 
-        board[y, x].GetComponent<AnimalBox>().SetColor(1.0f, 1.0f, 1.0f, 0.5f);
+        board[y, x].GetComponent<AnimalBox>().SetColor(0.5f, 1.0f, 0.5f, 0.5f);
         board[y, x].GetComponent<AnimalBox>().ActiveGhostFlag();
     }
 
@@ -437,7 +440,7 @@ public class GameManager : MonoBehaviour
             y = Random.Range(0, 7);
         }
 
-        board[y, x].GetComponent<AnimalBox>().SetColor(0.0f, 0.0f, 1.0f, 1.0f);
+        board[y, x].GetComponent<AnimalBox>().SetColor(1.0f, 0.0f, 0.0f, 1.0f);
         board[y, x].GetComponent<AnimalBox>().ActiveLightFlag();
     }
 
@@ -452,7 +455,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    
     //
     // 뭔가 빠진 경우의 수가 있는 듯 하다. 잘 찾아서 고치자.
     //

@@ -13,6 +13,7 @@ public class User : MonoBehaviour
     const float FEVER_TIME = 3.0f;
     const float FLASH_DURATION = 0.1f;
     const int SCORE_INCREASE = 300;
+    const float FEvER_INCREASE = 0.2f;
     public const float BOMB_INCREASE = 2.0f;
 
     GameManager gameMgr;
@@ -63,7 +64,7 @@ public class User : MonoBehaviour
         if (combo >= nextCombo)
         {
             nextCombo += 5;
-            accumulate_FeverTime += FEVER_TIME - (combo * 0.1f);
+            accumulate_FeverTime += (combo * FEvER_INCREASE);
             if (!bFeverMode)
                 StartCoroutine("FeverTimer");
         }
@@ -161,14 +162,15 @@ public class User : MonoBehaviour
     {
         while (comboText.color.a > 0.0f)
         {
-            comboText.color += new Color(0, 0, 0, -INCREASE_ALPHA);
+            comboText.color -= new Color(0, 0, 0, INCREASE_ALPHA);
             yield return new WaitForSeconds(TEXT_ALPHA_TIME);
         }
         Debug.Log("Fade Out");
         combo = 0;
 
         Reference.POINT hintPoint = gameMgr.CheckThereIsAnswer();
-        Hint(hintPoint.x, hintPoint.y);
+        if(hintPoint.x > -1)
+            Hint(hintPoint.x, hintPoint.y);
     }
 
     // 일정 시간이 지나도 콤보가 변동이 없는지 확인하기 위한 타이머 
