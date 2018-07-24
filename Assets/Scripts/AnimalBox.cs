@@ -48,30 +48,6 @@ public class AnimalBox : MonoBehaviour
        // if(bBomb)
     }
 
-    void Switching()
-    {
-        GameObject ChangeTile = gameMgr.GetAnimalTile()[row + dirV, column + dirH];
-
-        // 넘어간 타일과 위치를 교환한다.
-        transform.position = ChangeTile.GetComponent<AnimalBox>().GetOriginPos();
-        ChangeTile.transform.position = originPos;
-
-        // 각 동물 타일의 originPos 값을 초기화한다.
-        originPos = transform.position;
-        ChangeTile.GetComponent<AnimalBox>().SetOriginPos(ChangeTile.transform.position);
-
-        // 이부분이 참 이상한 것 같습니다 
-        // board 배열의 위치를 바꾼다.
-        GameObject tempObj = gameMgr.GetAnimalTile()[row, column];
-        gameMgr.GetAnimalTile()[row, column] = ChangeTile;
-        gameMgr.GetAnimalTile()[row + dirV, column + dirH] = tempObj;
-        //Debug.Log("Before Row : " + row + " Column : " + column);
-
-        gameMgr.GetAnimalTile()[row, column].GetComponent<AnimalBox>().SetArrNumber(row, column);
-        gameMgr.GetAnimalTile()[row + dirV, column + dirH].GetComponent<AnimalBox>().SetArrNumber(row + dirV, column + dirH);
-        //Debug.Log("After Row : " + row + " Column : " + column);
-    }
-
     private void OnMouseDown()
     {
         if (bBomb)
@@ -85,6 +61,10 @@ public class AnimalBox : MonoBehaviour
     private void OnMouseUp()
     {
         bool bOne = false, bTwo = false;
+
+        if (bBomb)
+            return;
+
         // 상하 이동 중
         if (vertical != 0)
         {
@@ -159,6 +139,9 @@ public class AnimalBox : MonoBehaviour
     // 마우스가 드래그 된 방향에 따라 동물 타일을 교환시킨다.
     private void OnMouseDrag()
     {
+        if (bBomb)
+            return;
+
         float mouseHorizon = Input.GetAxis("Mouse X");
         float mouseVertical = Input.GetAxis("Mouse Y");
         Vector3 pos = transform.position;
@@ -189,6 +172,30 @@ public class AnimalBox : MonoBehaviour
         if (originPos.x + DRAG_RANGE > nowPos.x + mouseHorizon * horizontal && originPos.x - DRAG_RANGE < nowPos.x + mouseHorizon * horizontal &&
             originPos.y + DRAG_RANGE > nowPos.y + mouseVertical * vertical && originPos.y - DRAG_RANGE < nowPos.y + mouseVertical * vertical)
             transform.position += new Vector3(mouseHorizon * horizontal, mouseVertical * vertical, 0);
+    }
+
+    void Switching()
+    {
+        GameObject ChangeTile = gameMgr.GetAnimalTile()[row + dirV, column + dirH];
+
+        // 넘어간 타일과 위치를 교환한다.
+        transform.position = ChangeTile.GetComponent<AnimalBox>().GetOriginPos();
+        ChangeTile.transform.position = originPos;
+
+        // 각 동물 타일의 originPos 값을 초기화한다.
+        originPos = transform.position;
+        ChangeTile.GetComponent<AnimalBox>().SetOriginPos(ChangeTile.transform.position);
+
+        // 이부분이 참 이상한 것 같습니다 
+        // board 배열의 위치를 바꾼다.
+        GameObject tempObj = gameMgr.GetAnimalTile()[row, column];
+        gameMgr.GetAnimalTile()[row, column] = ChangeTile;
+        gameMgr.GetAnimalTile()[row + dirV, column + dirH] = tempObj;
+        //Debug.Log("Before Row : " + row + " Column : " + column);
+
+        gameMgr.GetAnimalTile()[row, column].GetComponent<AnimalBox>().SetArrNumber(row, column);
+        gameMgr.GetAnimalTile()[row + dirV, column + dirH].GetComponent<AnimalBox>().SetArrNumber(row + dirV, column + dirH);
+        //Debug.Log("After Row : " + row + " Column : " + column);
     }
 
     // 마우스 드래그 방향에 따라 동물 타일의 방향을 결정함.
@@ -232,6 +239,11 @@ public class AnimalBox : MonoBehaviour
     {
         row = this.row;
         column = this.column;
+    }
+
+    public bool IsDropping()
+    {
+        return bDropping;
     }
 
     void Bomb()
@@ -320,7 +332,7 @@ public class AnimalBox : MonoBehaviour
     public void ActiveBombFlag()
     {
         bBomb = true;
-        Debug.Log("ASD");
+        //Debug.Log("ASD");
         SetSpriteBomb();
     }
 

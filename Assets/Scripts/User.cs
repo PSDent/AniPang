@@ -10,10 +10,10 @@ public class User : MonoBehaviour
     const float TEXT_ALPHA_TIME = 0.01f;
     const float INCREASE_ALPHA = 0.05f;
     const float WAIT_TIME = 3.0f;
-    const float FEVER_TIME = 3.0f;
+    const float FEVER_TIME = 1.5f;
     const float FLASH_DURATION = 0.1f;
     const int SCORE_INCREASE = 300;
-    const float FEvER_INCREASE = 0.2f;
+    const float FEVER_INCREASE = 0.5f;
     public const float BOMB_INCREASE = 2.0f;
 
     GameManager gameMgr;
@@ -64,7 +64,7 @@ public class User : MonoBehaviour
         if (combo >= nextCombo)
         {
             nextCombo += 5;
-            accumulate_FeverTime += (combo * FEvER_INCREASE);
+            accumulate_FeverTime += FEVER_INCREASE;
             if (!bFeverMode)
                 StartCoroutine("FeverTimer");
         }
@@ -153,7 +153,6 @@ public class User : MonoBehaviour
             yield return new WaitForSeconds(TEXT_ALPHA_TIME);
         }
 
-        Debug.Log("Fade In");
         StartCoroutine("IdleTimer");
     }
 
@@ -165,11 +164,11 @@ public class User : MonoBehaviour
             comboText.color -= new Color(0, 0, 0, INCREASE_ALPHA);
             yield return new WaitForSeconds(TEXT_ALPHA_TIME);
         }
-        Debug.Log("Fade Out");
+
         combo = 0;
 
         Reference.POINT hintPoint = gameMgr.CheckThereIsAnswer();
-        if(hintPoint.x > -1)
+        if (hintPoint.x > -1)
             Hint(hintPoint.x, hintPoint.y);
     }
 

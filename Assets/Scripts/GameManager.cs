@@ -15,8 +15,8 @@ public class GameManager : MonoBehaviour
     const float CREATE_DELAY = 0.3f;
     const float FADE_IN_DELAY = 0.001f;
     const float FADE_VALUE = 0.035f;
-    const int LIGHT_COUNT = 4;                          
-    const int GHOST_COUNT = 5; 
+    const int LIGHT_COUNT = 4;
+    const int GHOST_COUNT = 5;
 
     public const float TIMING = 0.2f;
 
@@ -66,7 +66,7 @@ public class GameManager : MonoBehaviour
         bStart = false;
 
         CheckOverlap();
-        if(bFade)
+        if (bFade)
             StartCoroutine("FadeIn");
         CheckThereIsAnswer();
     }
@@ -159,7 +159,7 @@ public class GameManager : MonoBehaviour
                     ++cntAnimal[index];
                 }
             }
-        
+
         }
 
         do
@@ -189,7 +189,7 @@ public class GameManager : MonoBehaviour
         {
             for (int j = 0; j < WIDTH; ++j)
             {
-                if(board[i,j])
+                if (board[i, j])
                     board[i, j].GetComponent<AnimalBox>().StartCoroutine("Drop");
             }
         }
@@ -203,16 +203,16 @@ public class GameManager : MonoBehaviour
         Queue<GameObject> tempQueue = new Queue<GameObject>(queue);
 
         // 복사된 큐를 dequeue 하면서 상하좌우의 타일을 모두 없앤다.
-        while(tempQueue.Count > 0)
+        while (tempQueue.Count > 0)
         {
             int row = 0, column = 0;
             tempQueue.Dequeue().GetComponent<AnimalBox>().GetArrNumber(ref row, ref column);
 
             if (row - 1 >= 0 && board[row - 1, column] && board[row - 1, column].tag != "Bomb")
                 board[row - 1, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
-            if (row + 1 < HEIGHT && board[row + 1, column] && board[row + 1, column].tag != "Bomb" )
+            if (row + 1 < HEIGHT && board[row + 1, column] && board[row + 1, column].tag != "Bomb")
                 board[row + 1, column].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
-            if (column - 1 >= 0 && board[row, column - 1] && board[row, column - 1].tag != "Bomb" )
+            if (column - 1 >= 0 && board[row, column - 1] && board[row, column - 1].tag != "Bomb")
                 board[row, column - 1].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
             if (column + 1 < WIDTH && board[row, column + 1] && board[row, column + 1].tag != "Bomb")
                 board[row, column + 1].GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
@@ -230,7 +230,8 @@ public class GameManager : MonoBehaviour
         for (int i = 1; i < 7; ++i)
         {
             if (column + i != pivotColumn)
-                if (!R && column + i < 7 && board[row, column + i] && board[row, column + i].tag == type)
+                if (!R && column + i < 7 && board[row, column + i]
+                    && !board[row, column + i].GetComponent<AnimalBox>().IsDropping() && board[row, column + i].tag == type)
                     queueW.Enqueue(board[row, column + i]);
                 else
                     R = true;
@@ -239,7 +240,8 @@ public class GameManager : MonoBehaviour
 
 
             if (column - i != pivotColumn)
-                if (!L && column - i >= 0 && board[row, column - i] && board[row, column - i].tag == type)
+                if (!L && column - i >= 0 && board[row, column - i]
+                    && !board[row, column - i].GetComponent<AnimalBox>().IsDropping() && board[row, column - i].tag == type)
                     queueW.Enqueue(board[row, column - i]);
                 else
                     L = true;
@@ -248,7 +250,8 @@ public class GameManager : MonoBehaviour
 
 
             if (row + i != pivotRow)
-                if (!U && row + i < 7 && board[row + i, column] && board[row + i, column].tag == type)
+                if (!U && row + i < 7 && board[row + i, column]
+                    && !board[row + i, column].GetComponent<AnimalBox>().IsDropping() && board[row + i, column].tag == type)
                     queueH.Enqueue(board[row + i, column]);
                 else
                     U = true;
@@ -256,8 +259,8 @@ public class GameManager : MonoBehaviour
                 U = true;
 
             if (row - i != pivotRow)
-                if (!D && row - i >= 0 && board[row - i, column] && board[row - i, column].tag == type)
-
+                if (!D && row - i >= 0 && board[row - i, column]
+                    && !board[row - i, column].GetComponent<AnimalBox>().IsDropping() && board[row - i, column].tag == type)
                     queueH.Enqueue(board[row - i, column]);
                 else
                     D = true;
@@ -287,17 +290,17 @@ public class GameManager : MonoBehaviour
             if (board[row + (dirV * -1), column + (dirH * -1)] == null)
                 return false;
 
-        queueW.Enqueue(board[row + (dirV * -1), column + (dirH * -1)]);     
+        queueW.Enqueue(board[row + (dirV * -1), column + (dirH * -1)]);
         queueH.Enqueue(board[row + (dirV * -1), column + (dirH * -1)]);
 
         ThereIsPair(ref queueW, ref queueH, row, column, dirV, dirH, type);
-        
+
         if (queueW.Count >= 3)
         {
             user.Addition(queueW.Count);
 
             // 피버상태라면 피버를 적용한다.
-            if(user.IsFeverMode())
+            if (user.IsFeverMode())
                 FeverMode(queueW);
             if (queueW.Count == GHOST_COUNT)
                 DecideGhost();
@@ -309,7 +312,7 @@ public class GameManager : MonoBehaviour
             {
                 queueW.Dequeue().GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
             }
-            
+
             result1 = true;
         }
 
@@ -334,7 +337,7 @@ public class GameManager : MonoBehaviour
             {
                 queueH.Dequeue().GetComponentInChildren<DestroyTile>().StartCoroutine("FlareDestroy");
             }
-            
+
             result2 = true;
         }
         return result1 || result2;
@@ -349,7 +352,7 @@ public class GameManager : MonoBehaviour
             {
                 for (int j = 0; j < WIDTH; ++j)
                 {
-                    if(board[i, j])
+                    if (board[i, j])
                         board[i, j].GetComponent<SpriteRenderer>().color += new Color(0.0f, 0.0f, 0.0f, FADE_VALUE);
                 }
                 yield return new WaitForSeconds(FADE_IN_DELAY);
@@ -363,7 +366,7 @@ public class GameManager : MonoBehaviour
         bReFilling = true;
         bool bEmpty = false;
 
-        while(true)
+        while (true)
         {
             yield return new WaitForSeconds(TIMING);
             for (int i = 0; i < 7; ++i)
@@ -383,13 +386,13 @@ public class GameManager : MonoBehaviour
                 bDropping = false;
 
                 // 모두 꽉 찼다면 동물타일 짝을 검사한다. 
-                for(int i = 0; i < WIDTH; ++i)
+                for (int i = 0; i < WIDTH; ++i)
                 {
                     CheckAnimal(6, i, 0, 0, board[6, i].tag);
                 }
                 break;
             }
-            
+
             bEmpty = false;
         }
 
@@ -401,7 +404,7 @@ public class GameManager : MonoBehaviour
         int x = Random.Range(0, 7);
         int y = Random.Range(0, 7);
 
-        while(!board[y, x])
+        while (!board[y, x])
         {
             x = Random.Range(0, 7);
             y = Random.Range(0, 7);
@@ -434,7 +437,7 @@ public class GameManager : MonoBehaviour
         int x = Random.Range(0, 7);
         int y = Random.Range(0, 7);
 
-        while (!board[y, x].gameObject)
+        while (board[y, x].gameObject == null)
         {
             x = Random.Range(0, 7);
             y = Random.Range(0, 7);
@@ -458,64 +461,134 @@ public class GameManager : MonoBehaviour
     //
     // 뭔가 빠진 경우의 수가 있는 듯 하다. 잘 찾아서 고치자.
     //
-    // 짝이 있는지 체크하는 함수를 잘 구현할 것 (각도 이용하는게 좋을 듯 하다)
+    // 짝이 있는지 체크하는 함수를 잘 구현할 것 (DFS를 이용하는게 좋을 듯 하다)
+    // 여기 필히 고치도록 한다. 
     public Reference.POINT CheckThereIsAnswer()
     {
-        bool bHasPair = false;
-
-        for (int m = 1; m < WIDTH - 1; ++m)
+        for (int m = 1; m < HEIGHT - 1; ++m)
         {
-            for(int n = 1; n < HEIGHT - 1; ++n)
+            for (int n = 1; n < WIDTH - 1; ++n)
             {
-                GameObject pivotObj = board[m, n];
+                bool isSet = false;
+                // 이 부분을 어떻게 재귀로 구현하지..
 
-                if (board[m, n].GetComponent<AnimalBox>().IsSpecial())
-                    return new Reference.POINT(n, m);
+                isSet = EdgeSearch(n, m, board[m, n].tag, 0, 0);
+                isSet = isSet || StraightSearch(n, m, board[m, n].tag);
 
-                for (int i = -1; i < 2; ++i)
-                {
-                    for (int j = -1; j < 2; ++j)
-                    {
-                        if (board[m + i, n + j].tag == pivotObj.tag)
-                            pairBoard[i + 1, j + 1] = true;
-                        else
-                            pairBoard[i + 1, j + 1] = false;
-                    }
-                }
-
-                if (pairBoard[0, 0])
-                {
-                    if (pairBoard[0, 2] || pairBoard[2, 0])
-                        bHasPair = true;
-                    else if (pairBoard[2, 1] || pairBoard[1, 2])
-                        bHasPair = true;
-                }
-                else if (pairBoard[2, 2])
-                {
-                    if (pairBoard[2, 0] || pairBoard[0, 2])
-                        bHasPair = true;
-                    else if (pairBoard[1, 0] || pairBoard[0, 1])
-                        bHasPair = true;
-                }
-                else if (pairBoard[0, 1] && pairBoard[2, 0])
-                    bHasPair = true;
-                else if (pairBoard[0, 2] && (pairBoard[1, 0] || pairBoard[2, 1]))
-                    bHasPair = true;
-                else if (pairBoard[1, 0] && pairBoard[0, 2])
-                    bHasPair = true;
-                else if (pairBoard[1, 2] && pairBoard[2, 0])
-                    bHasPair = true;
-                else if (pairBoard[2, 0] && pairBoard[0, 1])
-                    bHasPair = true;
-                else if (pairBoard[2, 1] && pairBoard[0, 2])
-                    bHasPair = true;
-
-                if (bHasPair)
+                if (isSet)
                     return new Reference.POINT(n, m);
             }
         }
 
-        Create(false);
+        //ResetBoard();
+        //Create(false);
+
         return new Reference.POINT(-1, -1);
+    }
+
+    bool EdgeSearch(int x, int y, string tag, int dir, int how)
+    {
+        if (how == 0)
+        {
+            bool isSet = false;
+            for(int i = 1; i > -2; i += -2)
+                for(int j = -1; j < 2; j += 2)
+                {
+                    if (board[y + i, x + j].tag == tag)
+                    {
+                        //Debug.Log("X : " + (x + j) + " Y : " + (y + i));
+                        isSet = EdgeSearch(x + j, y + i, tag, ++dir, how + 1);
+                        if (isSet)
+                        {
+                            Debug.Log(board[y + i, x + j].tag);
+                            Debug.Log( (x + j) + " " + (y + i));
+                            return true;
+                        }
+                    }
+                }
+        }
+        else // how == 1
+        {
+            if (dir == 1)
+            {
+                if (x - 1 >= 0 && board[y, x - 1].tag == tag)
+                {
+                    Debug.Log("A");
+                    return true;
+                }
+                else if (y + 1 < HEIGHT && board[y + 1, x].tag == tag)
+                {
+                    Debug.Log("B");
+                    return true;
+                }
+            }
+            else if (dir == 2)
+            {
+                if (x + 1 < WIDTH && board[y, x + 1].tag == tag)
+                {
+                    Debug.Log("C");
+                    return true;
+                }
+                else if (y + 1 < HEIGHT && board[y + 1, x].tag == tag)
+                {
+                    Debug.Log("D");
+                    return true;
+                }
+            }
+            else if (dir == 3)
+            {
+                if (x - 1 >= 0 && board[y, x - 1].tag == tag)
+                {
+                    Debug.Log("E");
+                    return true;
+                }
+                else if (y - 1 >= 0 && board[y - 1, x].tag == tag)
+                {
+                    Debug.Log("F");
+                    return true;
+                }
+            }
+            else
+            {
+                if (x + 1 < WIDTH && board[y, x + 1].tag == tag)
+                {
+                    Debug.Log("G");
+                    return true;
+                }
+                else if (y - 1 >= 0 && board[y - 1, x].tag == tag)
+                {
+                    Debug.Log("H");
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    bool StraightSearch(int x, int y, string tag)
+    {
+        if (y + 2 < HEIGHT && y + 3 < HEIGHT)
+        {
+            if (board[y + 2, x].tag == tag && board[y + 3, x].tag == tag)
+                return true;
+        }
+        else if (y - 2 >= 0 && y - 3 >= 0)
+        {
+            if (board[y - 2, x].tag == tag && board[y - 3, x].tag == tag)
+                return true;
+        }
+        else if (x + 2 < WIDTH && x + 3 < WIDTH)
+        {
+            if (board[y, x + 2].tag == tag && board[y, x + 3].tag == tag)
+                return true;
+        }
+        else if (x - 2 >= 0 && x - 3 >= 0)
+        {
+            if (board[y, x - 2].tag == tag && board[y, x - 3].tag == tag)
+                return true;
+        }
+
+        return false;
     }
 }   
