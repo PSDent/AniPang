@@ -34,6 +34,8 @@ public class User : MonoBehaviour
     int combo = 0;
     int nextCombo = 5;
 
+    int prevHintX, prevHintY;
+
     public float bombGage = 0;
 
     private void Awake()
@@ -85,6 +87,8 @@ public class User : MonoBehaviour
         AddCombo();
         // 짝이 맞는 동물타일의 개수만큼 점수를 올려준다.
         AddTargetScore(SCORE_INCREASE * cnt);
+
+        TurnOffHint();
     }
 
     void AddTargetScore(int val)
@@ -125,7 +129,19 @@ public class User : MonoBehaviour
     {
         Debug.Log("Hint : " + x + " " + y);
         if (gameMgr.GetAnimalTile()[y, x])
-            gameMgr.GetAnimalTile()[y, x].GetComponent<AnimalBox>().SetCrossHair();
+        {
+            gameMgr.GetAnimalTile()[y, x].GetComponent<AnimalBox>().SetCrossHair(true);
+            prevHintX = x;
+            prevHintY = y;
+        }
+    }
+
+    void TurnOffHint()
+    {
+        if(prevHintX > -1)
+        gameMgr.GetAnimalTile()[prevHintY, prevHintX].GetComponent<AnimalBox>().SetCrossHair(false);
+        prevHintX = -1;
+        prevHintY = -1;
     }
 
     IEnumerator FeverTimer()

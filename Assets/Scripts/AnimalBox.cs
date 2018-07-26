@@ -360,14 +360,21 @@ public class AnimalBox : MonoBehaviour
         spriteRenderer.sprite = Resources.Load<Sprite>(Reference.BOMB);
     }
 
-    public void SetCrossHair()
+    // 힌트를 표시할 동물타일의 표적 스프라이트를 활성화.
+    public void SetCrossHair(bool turnOn)
     {
-        transform.Find("EffectSprite").GetComponent<SpriteRenderer>().
-            sprite = Resources.Load<Sprite>(Reference.CROSSHAIR);
-        transform.Find("EffectSprite").GetComponent<SpriteRenderer>().color = new Color(1.0f, 0, 0, 1.0f);
-        transform.Find("EffectSprite").position += new Vector3(0, 0, -2);
-        transform.Find("EffectSprite").GetComponent<SpriteRenderer>().enabled = true;
-
+        if (turnOn)
+        {
+            transform.Find("EffectSprite").GetComponent<SpriteRenderer>().
+                sprite = Resources.Load<Sprite>(Reference.CROSSHAIR);
+            transform.Find("EffectSprite").GetComponent<SpriteRenderer>().color = new Color(1.0f, 0, 0, 1.0f);
+            transform.Find("EffectSprite").position += new Vector3(0, 0, -2);
+            transform.Find("EffectSprite").GetComponent<SpriteRenderer>().enabled = true;
+        }
+        else
+        {
+            transform.Find("EffectSprite").GetComponent<SpriteRenderer>().enabled = false;
+        }
     }
 
     public void SetColor(float r, float g, float b, float a)
@@ -377,11 +384,14 @@ public class AnimalBox : MonoBehaviour
         GetComponent<SpriteRenderer>().color = color;
     }
 
+    // 특수블럭인지 확인한다. (유령, 빛, 폭탄)
     public bool IsSpecial()
     {
         return bBomb; 
     }
 
+    // 동물타일의 낙하를 담당
+    // 계속 자신 밑에 객체가 있는지 확인하며 떨어진다. 
     IEnumerator Drop()
     {
         bDropping = true;
