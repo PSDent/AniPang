@@ -50,10 +50,13 @@ public class AnimalBox : MonoBehaviour
 
     private void OnMouseDown()
     {
+        Debug.Log("X : " + column + " Y " + row);
+        Debug.Log("Tag : " + tag);
+
         if (bBomb)
             Bomb();
         else if (bGhost)
-            GhostBlock();
+            GhostBlock(); 
     }
 
     // 타일 이동시 짝이 3 이상이라면 그 때 움직이도록 수정할 것.

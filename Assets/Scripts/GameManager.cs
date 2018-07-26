@@ -27,6 +27,9 @@ public class GameManager : MonoBehaviour
     GameObject[,] board;
     User user;
 
+    Queue<GameObject> CheckQueue_W;
+    Queue<GameObject> CheckQueue_H;
+
     bool bReFilling = false;
     bool bDropping = false;
     bool bStart = true;
@@ -38,6 +41,8 @@ public class GameManager : MonoBehaviour
         user = GetComponent<User>();
         // 동물 타일을 담을 2차원 배열을 할당
         board = new GameObject[HEIGHT, WIDTH];
+        CheckQueue_W = new Queue<GameObject>();
+        CheckQueue_H = new Queue<GameObject>();
 
         pairBoard = new bool[3, 3];
 
@@ -68,7 +73,6 @@ public class GameManager : MonoBehaviour
         CheckOverlap();
         if (bFade)
             StartCoroutine("FadeIn");
-        CheckThereIsAnswer();
     }
 
     void CreateAnimalTile(int x, int y, bool alphaOn)
@@ -458,137 +462,67 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    //
-    // 뭔가 빠진 경우의 수가 있는 듯 하다. 잘 찾아서 고치자.
-    //
-    // 짝이 있는지 체크하는 함수를 잘 구현할 것 (DFS를 이용하는게 좋을 듯 하다)
-    // 여기 필히 고치도록 한다. 
     public Reference.POINT CheckThereIsAnswer()
     {
-        for (int m = 1; m < HEIGHT - 1; ++m)
+        for (int m = 0; m < HEIGHT; ++m)
         {
-            for (int n = 1; n < WIDTH - 1; ++n)
+            for (int n = 0; n < WIDTH; ++n)
             {
                 bool isSet = false;
-                // 이 부분을 어떻게 재귀로 구현하지..
 
-                isSet = EdgeSearch(n, m, board[m, n].tag, 0, 0);
-                isSet = isSet || StraightSearch(n, m, board[m, n].tag);
-
+                isSet = IsThereASet(n, m, board[m, n].tag);
                 if (isSet)
                     return new Reference.POINT(n, m);
             }
         }
 
-        //ResetBoard();
-        //Create(false);
+        // 재 생성
+        ResetBoard();
+        Create(false);
 
         return new Reference.POINT(-1, -1);
     }
 
-    bool EdgeSearch(int x, int y, string tag, int dir, int how)
+    bool IsThereASet(int x, int y, string tag)
     {
-        if (how == 0)
+        bool result = false;
+
+        if (y + 1 < HEIGHT && y - 1 >= 0)
         {
-            bool isSet = false;
-            for(int i = 1; i > -2; i += -2)
-                for(int j = -1; j < 2; j += 2)
-                {
-                    if (board[y + i, x + j].tag == tag)
-                    {
-                        //Debug.Log("X : " + (x + j) + " Y : " + (y + i));
-                        isSet = EdgeSearch(x + j, y + i, tag, ++dir, how + 1);
-                        if (isSet)
-                        {
-                            Debug.Log(board[y + i, x + j].tag);
-                            Debug.Log( (x + j) + " " + (y + i));
-                            return true;
-                        }
-                    }
-                }
+            CheckQueue_W.Enqueue(board[y - 1, x]);
+            CheckQueue_H.Enqueue(board[y - 1, x]);
+            result = result || ThereIsPair(ref CheckQueue_W, ref CheckQueue_H, y + 1, x, 1, 0, tag);
+            ClearQueue();
         }
-        else // how == 1
+        if (y + 1 < HEIGHT && y - 1 >= 0)
         {
-            if (dir == 1)
-            {
-                if (x - 1 >= 0 && board[y, x - 1].tag == tag)
-                {
-                    Debug.Log("A");
-                    return true;
-                }
-                else if (y + 1 < HEIGHT && board[y + 1, x].tag == tag)
-                {
-                    Debug.Log("B");
-                    return true;
-                }
-            }
-            else if (dir == 2)
-            {
-                if (x + 1 < WIDTH && board[y, x + 1].tag == tag)
-                {
-                    Debug.Log("C");
-                    return true;
-                }
-                else if (y + 1 < HEIGHT && board[y + 1, x].tag == tag)
-                {
-                    Debug.Log("D");
-                    return true;
-                }
-            }
-            else if (dir == 3)
-            {
-                if (x - 1 >= 0 && board[y, x - 1].tag == tag)
-                {
-                    Debug.Log("E");
-                    return true;
-                }
-                else if (y - 1 >= 0 && board[y - 1, x].tag == tag)
-                {
-                    Debug.Log("F");
-                    return true;
-                }
-            }
-            else
-            {
-                if (x + 1 < WIDTH && board[y, x + 1].tag == tag)
-                {
-                    Debug.Log("G");
-                    return true;
-                }
-                else if (y - 1 >= 0 && board[y - 1, x].tag == tag)
-                {
-                    Debug.Log("H");
-                    return true;
-                }
-            }
+            CheckQueue_W.Enqueue(board[y + 1, x]);
+            CheckQueue_H.Enqueue(board[y + 1, x]);
+            result = result || ThereIsPair(ref CheckQueue_W, ref CheckQueue_H, y - 1, x, -1, 0, tag);
+            ClearQueue();
+        }
+        if (x + 1 < WIDTH && x - 1 >= 0)
+        {
+            CheckQueue_W.Enqueue(board[y, x - 1]);
+            CheckQueue_H.Enqueue(board[y, x - 1]);
+            result = result || ThereIsPair(ref CheckQueue_W, ref CheckQueue_H, y, x + 1, 0, 1, tag);
+            ClearQueue();
+        }
+        if (x + 1 < WIDTH && x - 1 >= 0)
+        {
+            CheckQueue_W.Enqueue(board[y, x + 1]);
+            CheckQueue_H.Enqueue(board[y, x + 1]);
+            result = result || ThereIsPair(ref CheckQueue_W, ref CheckQueue_H, y, x - 1, 0, -1, tag);
+            ClearQueue();
         }
 
-        return false;
+        return result;
     }
 
-    bool StraightSearch(int x, int y, string tag)
+    void ClearQueue()
     {
-        if (y + 2 < HEIGHT && y + 3 < HEIGHT)
-        {
-            if (board[y + 2, x].tag == tag && board[y + 3, x].tag == tag)
-                return true;
-        }
-        else if (y - 2 >= 0 && y - 3 >= 0)
-        {
-            if (board[y - 2, x].tag == tag && board[y - 3, x].tag == tag)
-                return true;
-        }
-        else if (x + 2 < WIDTH && x + 3 < WIDTH)
-        {
-            if (board[y, x + 2].tag == tag && board[y, x + 3].tag == tag)
-                return true;
-        }
-        else if (x - 2 >= 0 && x - 3 >= 0)
-        {
-            if (board[y, x - 2].tag == tag && board[y, x - 3].tag == tag)
-                return true;
-        }
-
-        return false;
+        CheckQueue_H.Clear();
+        CheckQueue_W.Clear();
     }
+
 }   
